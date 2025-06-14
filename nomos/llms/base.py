@@ -1,12 +1,12 @@
 """LLMBase class for SOFIA agent framework."""
 
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
 from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
 from ..models.agent import Message, Step, StepIdentifier, Summary
-from ..models.tool import Tool
+from ..models.tool import RemoteTool, Tool
 from ..utils.logging import log_error
 
 
@@ -134,7 +134,7 @@ class LLMBase:
         self,
         messages: List[Message],
         response_format: BaseModel,
-        **kwargs: dict,
+        **kwargs: Any,  # noqa: ANN401
     ) -> BaseModel:
         """
         Get a structured response from the LLM.
@@ -155,6 +155,7 @@ class LLMBase:
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
+        remote_tools: Optional[List[RemoteTool]] = None,
     ) -> BaseModel:
         """
         Get a structured response from the LLM using the agent's context.
@@ -181,12 +182,20 @@ class LLMBase:
             ),
             persona=persona if persona else DEFAULT_PERSONA.strip(),
         )
-        return self.get_output(messages=messages, response_format=response_format)
+        kwargs = {}
+        if remote_tools:
+            kwargs["remote_tools"] = remote_tools
+
+        return self.get_output(
+            messages=messages,
+            response_format=response_format,
+            **kwargs,
+        )
 
     def generate(
         self,
         messages: List[Message],
-        **kwargs: dict,
+        **kwargs: Any,  # noqa: ANN401
     ) -> str:
         """
         Generate a response from the LLM based on the provided messages.
@@ -200,6 +209,15 @@ class LLMBase:
     def token_counter(self, text: str) -> int:
         """Count the number of tokens in a string."""
         return len(text.split())
+
+    def format_remote_tools(self, remote_tools: List[RemoteTool]) -> list:
+        """
+        Format remote tools for passing to the LLM.
+
+        :param remote_tools: List of RemoteTool objects.
+        :return: list of formatted remote tools.
+        """
+        raise NotImplementedError("Subclasses should implement this method.")
 
 
 __all__ = ["LLMBase"]

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel, Field
 
-from .tool import Tool
+from .tool import Tool, is_package_tool, is_remote_tool
 from ..constants import ACTION_ENUMS
 from ..utils.utils import create_base_model, create_enum
 
@@ -114,9 +114,19 @@ class Step(BaseModel):
         :return: List of tool names.
         """
         return [
-            Tool.from_pkg(tool).name if ":" in tool else tool
-            for tool in self.available_tools
+            Tool.from_pkg(tool).name if is_package_tool(tool) else tool
+            for tool in filter(lambda t: not is_remote_tool(t), self.available_tools)
         ]
+
+    @property
+    def remote_tools(self) -> List[str]:
+        """
+        Get the list of available remote tool names for this step.
+
+        :return: List of tool names.
+        """
+        remote_tools = list(filter(lambda t: is_remote_tool(t), self.available_tools))
+        return remote_tools
 
     def get_step_identifier(self) -> StepIdentifier:
         """

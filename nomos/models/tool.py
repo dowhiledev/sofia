@@ -1,13 +1,38 @@
-"""Tool abstractions and related logic for the SOFIA package."""
+"""Tool abstractions and related logic for the Nomos package."""
 
 import inspect
+from enum import Enum
 from typing import Any, Callable, Dict, Optional, Type
+
 
 from docstring_parser import parse
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, HttpUrl, SecretStr, ValidationError
 
 from ..utils.utils import create_base_model
+
+
+def is_remote_tool(tool_name: str) -> bool:
+    """
+    Check if a tool name is an Remote tool.
+
+    :param tool_name: The name of the tool.
+    :return: True if it is an Remote tool, False otherwise.
+    """
+    if "mcp:" in tool_name:
+        return True
+
+    return False
+
+
+def is_package_tool(tool_name: str) -> bool:
+    """
+    Check if a tool name is a package tool.
+
+    :param tool_name: The name of the tool.
+    :return: True if it is a package tool, False otherwise.
+    """
+    return ":" in tool_name and not is_remote_tool(tool_name)
 
 
 class Tool(BaseModel):
@@ -197,4 +222,72 @@ class InvalidArgumentsError(Exception):
         return f"Invalid arguments: {', '.join(error_messages)}. Please Try again with valid arguments."
 
 
-__all__ = ["Tool", "FallbackError"]
+class MCPToolError(Exception):
+    """Exception raised when there's an error with MCP tool execution."""
+
+    def __init__(self, message: str, tool_name: str) -> None:
+        """Initialize with error message and tool name."""
+        self.message = message
+        self.tool_name = tool_name
+        super().__init__(f"Error with MCP tool '{tool_name}': {message}")
+
+
+class MCPServer(BaseModel):
+    """
+    Represents a Model Configuration Protocol (MCP) server that provides tools.
+
+    MCP servers expose tools that can be discovered and used by Nomos agents.
+    Each tool on the server is made available as a Tool object in Nomos.
+
+    Attributes:
+        url (HttpUrl): The base URL of the MCP server.
+        api_key (Optional[SecretStr]): API key for authentication with the MCP server.
+        name (str): Name of the MCP server.
+        endpoint_path (str): Path to the tools endpoint on the MCP server.
+    """
+
+    name: str
+    url: HttpUrl
+    api_key: Optional[SecretStr] = None
+    path: Optional[str] = ""
+
+
+class RemoteTool(BaseModel):
+    """
+    Represents a remote tool.
+
+    Attributes:
+        name (str): The function to be executed when the tool is called.
+        server (MCPServer): The MCP server that provides this tool.
+    """
+
+    class RemoteToolType(str, Enum):
+        """Enum for different types of remote tools."""
+
+        mcp = "mcp"
+
+    type: RemoteToolType
+    name: str
+    server: MCPServer
+
+    def is_type_mcp(self) -> bool:
+        """
+        Check if the remote tool is of type MCP.
+
+        :return: True if the tool is an MCP tool, False otherwise.
+        """
+        return self.type == self.RemoteToolType.mcp
+
+    @classmethod
+    def from_mcp_server(cls, server: MCPServer, tool_name: str) -> "RemoteTool":
+        """
+        Create a RemoteTool instance from an MCP server and tool name.
+
+        :param server: The MCP server that provides this tool.
+        :param tool_name: The name of the tool.
+        :return: An instance of RemoteTool.
+        """
+        return cls(type=cls.RemoteToolType.mcp, name=tool_name, server=server)
+
+
+__all__ = ["Tool", "FallbackError", "MCPServer", "MCPToolError", "RemoteTool"]

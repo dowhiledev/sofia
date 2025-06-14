@@ -12,6 +12,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
+from .models.tool import MCPServer
 
 
 class ServerConfig(BaseModel):
@@ -64,6 +65,8 @@ class AgentConfig(BaseSettings):
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
     server: ServerConfig = ServerConfig()
+
+    mcp_servers: Optional[List[MCPServer]] = None  # Optional MCP server configurations
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "AgentConfig":

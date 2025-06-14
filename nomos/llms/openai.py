@@ -1,11 +1,13 @@
 """OpenAI LLM integration for SOFIA."""
 
-from typing import List
+from typing import Any, List
 
 from pydantic import BaseModel
 
 from .base import LLMBase
 from ..models.agent import Message
+from ..models.tool import RemoteTool
+from ..utils.url import join_urls
 
 
 class OpenAI(LLMBase):
@@ -34,7 +36,7 @@ class OpenAI(LLMBase):
         self,
         messages: List[Message],
         response_format: BaseModel,
-        **kwargs: dict,
+        **kwargs: Any,  # noqa: ANN401
     ) -> BaseModel:
         """
         Get a structured response from the OpenAI LLM.
@@ -45,18 +47,24 @@ class OpenAI(LLMBase):
         :return: Parsed response as a BaseModel.
         """
         _messages = [msg.model_dump() for msg in messages]
-        comp = self.client.beta.chat.completions.parse(
+        remote_tools = kwargs.pop("remote_tools", None)
+        if remote_tools:
+            # Format remote tools for OpenAI API
+            formatted_tools = self.format_remote_tools(remote_tools)
+            kwargs["tools"] = formatted_tools
+
+        comp = self.client.responses.parse(
             model=self.model,
-            messages=_messages,
-            response_format=response_format,
+            input=_messages,
+            text_format=response_format,
             **kwargs,
         )
-        return comp.choices[0].message.parsed
+        return comp.output_parsed
 
     def generate(
         self,
         messages: List[Message],
-        **kwargs: dict,
+        **kwargs: Any,  # noqa: ANN401
     ) -> str:
         """
         Generate a response from the OpenAI LLM based on the provided messages.
@@ -81,6 +89,35 @@ class OpenAI(LLMBase):
 
         enc = tiktoken.encoding_for_model(self.model)
         return len(enc.encode(text))
+
+    def format_remote_tools(self, remote_tools: List[RemoteTool]) -> List[dict]:
+        """
+        Format remote tools for OpenAI API.
+
+        :param remote_tools: List of RemoteTool objects.
+        :return: List of formatted tool dictionaries.
+        """
+        server_name_to_config: dict[str, dict] = {}
+        for tool in remote_tools:
+            if tool.type != RemoteTool.RemoteToolType.mcp.value:
+                continue
+
+            server_name = tool.server.name
+            if server_name in server_name_to_config:
+                server_config = server_name_to_config[server_name]
+                server_config["allowed_tools"].append(tool.name)
+            else:
+                server_url = join_urls(str(tool.server.url), tool.server.path)
+                server_config = {
+                    "type": "mcp",
+                    "server_label": server_name,
+                    "server_url": server_url,
+                    "require_approval": "never",
+                    "allowed_tools": [tool.name],
+                }
+            server_name_to_config[server_name] = server_config
+
+        return list(server_name_to_config.values())
 
 
 __all__ = ["OpenAI"]
