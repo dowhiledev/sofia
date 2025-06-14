@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "node-fetch": path.resolve(__dirname, "./src/shims/node-fetch.ts"),
     },
   },
 })

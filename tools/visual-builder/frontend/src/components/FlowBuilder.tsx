@@ -560,7 +560,12 @@ const initialEdges: Edge[] = [
   },
 ];
 
-export default function FlowBuilder() {
+interface FlowBuilderProps {
+  onPreview?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
+  onSaveConfig?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
+}
+
+export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
@@ -720,6 +725,15 @@ export default function FlowBuilder() {
     setAgentName(name);
     setPersona(newPersona);
   }, []);
+
+  const handlePreview = useCallback(() => {
+    if (onPreview) onPreview(nodes, edges, agentName, persona);
+  }, [onPreview, nodes, edges, agentName, persona]);
+
+  const handleSaveConfig = useCallback(() => {
+    if (onSaveConfig) onSaveConfig(nodes, edges, agentName, persona);
+  }, [onSaveConfig, nodes, edges, agentName, persona]);
+
 
   // Custom onNodesChange handler that auto-resizes groups when children move
   const onNodesChange = useCallback((changes: any[]) => {
@@ -1263,6 +1277,8 @@ export default function FlowBuilder() {
               onExportYaml={handleExportYaml}
               onImportYaml={handleImportYaml}
               onNewConfig={handleNewConfig}
+              onSaveConfig={handleSaveConfig}
+              onPreview={handlePreview}
             />
           </div>
 
