@@ -3,6 +3,7 @@
 import pytest
 from typing import List
 from pydantic import BaseModel
+import pytest
 
 from nomos.models.agent import Message, Step, Route
 from nomos.llms import LLMBase
@@ -15,14 +16,17 @@ class MockLLM(LLMBase):
 
     def __init__(self):
         """Initialize mock LLM."""
-        self.response = None
+        self.responses = []
         self.messages_received = []
         self._generate_response = None
 
-    def set_response(self, response: BaseModel):
-        """Set the responses that the mock LLM will return."""
+    def set_response(self, response: BaseModel, *, append: bool = False):
+        """Set or queue a response that the mock LLM will return."""
         log_error(f"Setting mock response: {response}")
-        self.response = response
+        if append:
+            self.responses.append(response)
+        else:
+            self.responses = [response]
 
     def set_generate_response(self, response: str) -> None:
         """Set the response returned by ``generate``."""
@@ -41,13 +45,16 @@ class MockLLM(LLMBase):
         """Mock implementation that returns pre-set responses."""
         self.messages_received = messages
 
-        if not self.response:
+        if not self.responses:
             raise ValueError("No more mock response available")
+        response = self.responses.pop(0)
+        if not self.responses:
+            self.responses.append(response)
         # Check if the response schema matches the expected format schema
         assert (
-            self.response.model_json_schema() == response_format.model_json_schema()
-        ), f"Response schema mismatch: {self.response.model_json_schema()} != {response_format.model_json_schema()}"
-        return self.response
+            response.model_json_schema() == response_format.model_json_schema()
+        ), f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        return response
 
 
 @pytest.fixture

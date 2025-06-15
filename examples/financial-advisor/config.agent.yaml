@@ -45,7 +45,7 @@ steps:
   - step_id: expense_tracking
     description: |
       Help users track their expenses.
-      Use add_expense to record new expenses.
+      Use add_expense to record new expenses. Makesure to ask the user if there are any expenses to add.
       Use get_expense_summary to show current spending patterns.
       Provide insights on spending habits and suggest improvements.
     available_tools:
