@@ -166,6 +166,8 @@ tools:
       name: "file_read_tool"
     - tag: "@langchain/google_search"
       name: "google_search"
+    - tag: '@mcp/https://gitmcp.io/dowhiledev/nomos'
+      name: gitmcp
   tool_arg_descriptions:
     add_to_cart:
       coffee_type: "Coffee type (e.g., Espresso, Latte, Cappuccino)"
@@ -225,7 +227,15 @@ many examples are displayed and the minimum similarity required.
 
 ## External Tool Integration
 
-NOMOS allows you to reference Python package functions, CrewAI tools, and LangChain tools directly in your configuration.
+NOMOS allows you to reference Python package functions, CrewAI tools, LangChain tools or MCP tools directly in your configuration.
+
+```yaml
+steps:
+  - step_id: use_tools
+    description: Use external tools
+    available_tools:
+      - '@mcp/gitmcp'
+```
 
 ### Benefits
 

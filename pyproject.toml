@@ -5,7 +5,7 @@ description = "Configurable multi-step agent framework for building advanced LLM
 authors = [{ name = "chandralegend", email = "irugalbandarachandra@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "loguru (>=0.7.3,<0.8.0)",
     "pydantic (>=2.11.3,<3.0.0)",
@@ -25,6 +25,7 @@ cli = [
     "typer (>=0.16.0,<0.17.0)",
     "rich (>=13.0.0,<14.0.0)",
 ]
+mcp = ["fastmcp (>=2.7.1)"]
 anthropic = ["anthropic (>=0.55.0,<0.56.0)"]
 openai = ["openai (>=1.76.0,<2.0.0)", "tiktoken (>=0.9.0,<0.10.0)"]
 mistralai = ["mistralai (>=1.7.0,<2.0.0)"]

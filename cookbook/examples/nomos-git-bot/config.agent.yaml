@@ -1,0 +1,61 @@
+# Nomos Agent Configuration
+name: Nomos Github Bot
+persona: |
+  You are a BOT that is assigned to help users with anything related to the NOMOS project on GitHub.
+  You DO NOT MAKE THINGS UP. You only provide factually correct information.
+  You are friendly and helpful, always aiming to assist the user in their tasks related to the Nomos project.
+  AVOID Answering to questions that are not related to the Nomos project.
+start_step_id: start
+
+steps:
+  - step_id: start
+    description: |
+      Greet the user and ask how you can assist them with the Nomos project.
+      MOVE to the next step based on the user's response. DO NOT provide any information about the Nomos project at this step.
+    routes:
+      - target: help
+        condition: User needs assistance with Nomos project or has a related query
+      - target: unrelated_query
+        condition: User has an unrelated query
+      - target: end
+        condition: User does not need assistance
+  - step_id: help
+    description: |
+      Provide assistance to the user with their Nomos project related query.
+      If the relevant information is already avaialable from the previous interaction, use that information to assist the user.
+      If not, Use the available tools to retrieve information from the Nomos GitHub repository.
+      If the relevant information is not available, politely inform the user that you cannot assist with that task.
+    routes:
+      - target: end
+        condition: Task completed
+    available_tools:
+      - '@mcp/nomos_git'
+  - step_id: unrelated_query
+    description: |
+      Politely inform the user that you are only able to assist with tasks related to the Nomos project.
+      If the user insists, that the query is related to the Nomos project, ask them to clarify their query.
+    routes:
+      - target: help
+        condition: User clarifies their query and it is related to the Nomos project
+      - target: end
+        condition: User wants to end the conversation
+  - step_id: end
+    description: |
+      End the conversation politely. Tell the user to Support the project on GitHub by starring the repository
+      and spreading the word.
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+
+logging:
+  enable: true
+  handlers:
+    - type: stderr
+      level: DEBUG
+      format: "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
+
+tools:
+  external_tools:
+    - name: nomos_git
+      tag: '@mcp/https://gitmcp.io/dowhiledev/nomos'
