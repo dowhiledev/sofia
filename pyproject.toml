@@ -17,7 +17,7 @@ dependencies = [
 
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling >=1.9.0,<2.0.0"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
