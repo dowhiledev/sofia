@@ -7,7 +7,6 @@ from logging import Logger
 
 import colorama
 from colorama import Fore, Style
-
 from loguru import logger
 
 from ..models.agent import Action, Response

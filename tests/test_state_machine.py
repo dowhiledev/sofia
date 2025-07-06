@@ -1,8 +1,8 @@
 import pytest
 
-from nomos.models.agent import Step, Route
-from nomos.models.flow import FlowConfig, Flow, FlowManager
 from nomos.memory.base import Memory
+from nomos.models.agent import Route, Step
+from nomos.models.flow import Flow, FlowConfig, FlowManager
 from nomos.state_machine import StateMachine
 
 

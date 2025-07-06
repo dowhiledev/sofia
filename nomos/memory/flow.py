@@ -5,12 +5,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-
-from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase, LLMConfig
 from ..models.agent import Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
+from .base import Memory
 
 
 class Retriver:

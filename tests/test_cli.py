@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 from typer.testing import CliRunner
 
-from nomos.cli import app, _generate_project_files
+from nomos.cli import _generate_project_files, app
 from nomos.config import AgentConfig
 from nomos.models.agent import Step as AgentStep
 
@@ -573,8 +573,9 @@ class TestUtilityFunctions:
     @patch("subprocess.run")
     def test_run_tests_failure(self, mock_subprocess):
         """Test _run_tests function with failure."""
-        from nomos.cli import _run_tests
         import typer
+
+        from nomos.cli import _run_tests
 
         mock_subprocess.return_value.returncode = 1
 

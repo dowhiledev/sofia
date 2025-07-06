@@ -19,9 +19,9 @@ import json
 import re
 from typing import Any, Dict, List, Set
 
-from nomos.utils.logging import log_error, log_info
-
 import yaml
+
+from nomos.utils.logging import log_error, log_info
 
 
 def sanitize_node_id(node_id: str) -> str:

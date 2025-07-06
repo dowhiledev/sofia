@@ -17,7 +17,6 @@ from typing import (
 )
 
 from docstring_parser import parse
-
 from pydantic import BaseModel, ValidationError
 
 from ..utils.utils import create_base_model, parse_type
@@ -188,7 +187,7 @@ class Tool(BaseModel):
         :return: An instance of Tool.
         """
         from crewai.tools import BaseTool
-        from pydantic import create_model, BaseModel, ConfigDict
+        from pydantic import BaseModel, ConfigDict, create_model
 
         def rename_pydantic_model(
             model: type[BaseModel], new_name: str

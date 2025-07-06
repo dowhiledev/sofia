@@ -2,9 +2,9 @@
 
 from typing import Optional
 
-from nomos.models.agent import State
-
 from pydantic import BaseModel
+
+from nomos.models.agent import State
 
 
 class Message(BaseModel):

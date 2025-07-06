@@ -75,3 +75,6 @@ omit = [
 lint.select = ["I"]
 exclude = ["cookbook/"]
 line-length = 100
+
+[tool.isort]
+line_length = 100

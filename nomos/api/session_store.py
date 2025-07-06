@@ -6,20 +6,16 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from loguru import logger
-
-from nomos.types import Session as AgentSession
-
 from redis.asyncio import Redis
-
-
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
-
 from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .agent import agent
+from nomos.types import Session as AgentSession
+
 from ..models.agent import State
+from .agent import agent
 
 
 class Session(SQLModel, table=True):  # type: ignore

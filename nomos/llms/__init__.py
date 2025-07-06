@@ -12,7 +12,6 @@ from .mistral import Mistral
 from .ollama import Ollama
 from .openai import OpenAI
 
-
 LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace, Anthropic]
 
 

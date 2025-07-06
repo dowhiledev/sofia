@@ -4,8 +4,9 @@ import os
 
 # Initialize Tracing
 if os.getenv("ENABLE_TRACING", "false").lower() == "true":
-    from nomos.utils.tracing import initialize_tracing
     from opentelemetry.sdk.resources import Resource
+
+    from nomos.utils.tracing import initialize_tracing
 
     initialize_tracing(
         tracer_provider_kwargs={

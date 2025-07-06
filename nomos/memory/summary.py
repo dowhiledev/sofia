@@ -5,10 +5,10 @@ from typing import List, Optional, Union
 
 from nomos.models.agent import Message, Step, Summary
 
-from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase
 from ..utils.logging import log_debug
+from .base import Memory
 
 
 class PeriodicalSummarizationMemory(Memory):

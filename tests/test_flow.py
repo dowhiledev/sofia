@@ -1,13 +1,14 @@
 """Tests for Flow construct functionality."""
 
-import pytest
+from typing import Any, Dict
 from unittest.mock import Mock, patch
-from typing import Dict, Any
 
-from nomos.models.flow import FlowContext, FlowComponent, FlowConfig, Flow, FlowManager
-from nomos.models.agent import Step, Message
-from nomos.memory.flow import FlowMemoryComponent
+import pytest
+
 from nomos.config import AgentConfig
+from nomos.memory.flow import FlowMemoryComponent
+from nomos.models.agent import Message, Step
+from nomos.models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManager
 from nomos.utils import flow_utils
 
 

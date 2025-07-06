@@ -5,8 +5,8 @@ from unittest.mock import patch
 from nomos.utils.generator import (
     AgentConfiguration,
     AgentGenerator,
-    Step,
     Route,
+    Step,
 )
 
 

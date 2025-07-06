@@ -6,10 +6,10 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Tuple
 
+from pydantic import BaseModel, Field
+
 from nomos.core import Agent
 from nomos.models.agent import Message, State
-
-from pydantic import BaseModel, Field
 
 
 class SimulationDecision(Enum):  # noqa

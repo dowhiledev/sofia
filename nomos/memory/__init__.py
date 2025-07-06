@@ -4,9 +4,9 @@ from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel
 
+from ..llms import LLMConfig
 from .base import Memory
 from .summary import PeriodicalSummarizationMemory
-from ..llms import LLMConfig
 
 
 class MemoryConfig(BaseModel):

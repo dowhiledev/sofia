@@ -4,8 +4,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from .base import LLMBase
 from ..models.agent import Message
+from .base import LLMBase
 
 
 class OpenAI(LLMBase):

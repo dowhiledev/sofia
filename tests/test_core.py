@@ -2,23 +2,24 @@
 
 import os
 import sys
-import pytest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from nomos.config import AgentConfig, ToolsConfig
+from nomos.core import Agent, Session
 from nomos.models.agent import (
     Action,
+    Decision,
     DecisionConstraints,
     Message,
+    Route,
+    Step,
     StepIdentifier,
     Summary,
-    Step,
-    Route,
-    Decision,
 )
-from nomos.core import Agent, Session
-from nomos.config import AgentConfig, ToolsConfig
-from nomos.models.tool import Tool, ToolWrapper, ToolDef, ArgDef
+from nomos.models.tool import ArgDef, Tool, ToolDef, ToolWrapper
 
 
 def test_agent_initialization(basic_agent):
@@ -1050,8 +1051,8 @@ class TestFlowIntegration:
         session = basic_agent.create_session()
 
         # Mock flow and flow memory
-        from nomos.models.flow import Flow, FlowContext
         from nomos.memory.flow import FlowMemoryComponent
+        from nomos.models.flow import Flow, FlowContext
 
         mock_flow = MagicMock(spec=Flow)
         mock_flow_memory = MagicMock(spec=FlowMemoryComponent)
@@ -1073,8 +1074,8 @@ class TestFlowIntegration:
         session = basic_agent.create_session()
 
         # Mock flow and flow memory
-        from nomos.models.flow import Flow, FlowContext
         from nomos.memory.flow import FlowMemoryComponent
+        from nomos.models.flow import Flow, FlowContext
 
         mock_flow = MagicMock(spec=Flow)
         mock_flow_memory = MagicMock(spec=FlowMemoryComponent)
@@ -1171,7 +1172,7 @@ class TestAgentNext:
 
     def test_agent_next_with_session_context_object(self, basic_agent):
         """Test Agent.next with session State object."""
-        from nomos.models.agent import State, Message
+        from nomos.models.agent import Message, State
 
         session_context = State(
             current_step_id="start", history=[Message(role="user", content="Hello")]

@@ -5,8 +5,8 @@ from typing import List
 
 from pydantic import BaseModel
 
-from .base import LLMBase
 from ..models.agent import Message
+from .base import LLMBase
 
 
 class Mistral(LLMBase):

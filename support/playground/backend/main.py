@@ -9,12 +9,11 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from nomos.api.models import ChatRequest, ChatResponse
 from nomos.core import Agent, AgentConfig
 from nomos.models.agent import Response
-
-from pydantic import BaseModel
 
 app = FastAPI()
 

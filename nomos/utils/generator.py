@@ -2,16 +2,14 @@
 
 from typing import Optional
 
+import yaml
 from pydantic import BaseModel, Field
-
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
-import yaml
-
 from ..llms import LLMConfig
-from ..models.agent import Message, Route, Step as AgentStep
-
+from ..models.agent import Message, Route
+from ..models.agent import Step as AgentStep
 
 REASONING_PROMPT = """
 You are an expert agent configuration generator. Agent contains a set of steps and flows that the agent can take to achieve a specific goal.

@@ -7,13 +7,12 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
+import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
-
-import typer
 
 from . import __version__
 from .config import AgentConfig, LoggingConfig, LoggingHandler
@@ -30,7 +29,6 @@ from .llms import LLMConfig
 from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
-
 
 console = Console()
 app = typer.Typer(

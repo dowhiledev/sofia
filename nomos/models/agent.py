@@ -4,20 +4,18 @@ import heapq
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     List,
     Literal,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 from uuid import uuid4
 
-
 from pydantic import BaseModel, Field
-
 
 from ..utils.utils import create_base_model, create_enum
 
