@@ -206,5 +206,11 @@
       "chatgpt",
       "claude"
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/intro"
+    }
+  ]
 }
