@@ -43,7 +43,7 @@
           {
             "group": "Getting Started",
             "pages": [
-              "index",
+              "intro",
               "getting-started"
             ]
           },
@@ -51,7 +51,8 @@
             "group": "Why NOMOS?",
             "pages": [
               "nomos/philosophy",
-              "nomos/vs-other-frameworks"
+              "nomos/vs-other-frameworks",
+              "nomos/architecture"
             ]
           },
           {
@@ -205,5 +206,11 @@
       "chatgpt",
       "claude"
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/intro"
+    }
+  ]
 }
