@@ -189,7 +189,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(tool_response)
 
     # Tool usage
-    res = session.next("Use the tool", return_tool=True)
+    session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -227,7 +227,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(invalid_response)
 
     with pytest.raises(ValueError, match="Maximum errors reached"):
-        res = session.next("Use tool with invalid args", return_tool=True)
+        session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -631,7 +631,7 @@ class TestUnknownActionHandling:
 
     def test_action_enum_coverage(self, basic_agent):
         """Test action enum values for coverage."""
-        session = basic_agent.create_session()
+        basic_agent.create_session()
 
         # Test that Action enum has expected values
         assert hasattr(Action, "RESPOND")

@@ -1,5 +1,3 @@
-import pytest
-
 from nomos.memory.flow import FlowMemory, Retriver
 from nomos.memory.summary import PeriodicalSummarizationMemory
 from nomos.memory.base import Memory
