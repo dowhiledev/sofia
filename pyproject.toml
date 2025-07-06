@@ -5,7 +5,7 @@ description = "Configurable multi-step agent framework for building advanced LLM
 authors = [{ name = "chandralegend", email = "irugalbandarachandra@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dependencies = [
     "loguru (>=0.7.3,<0.8.0)",
     "pydantic (>=2.11.3,<3.0.0)",
@@ -17,10 +17,10 @@ dependencies = [
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[project.optional-dependencies]
+[dependency-groups]
 cli = [
     "typer (>=0.16.0,<0.17.0)",
     "rich (>=13.0.0,<14.0.0)",
@@ -45,6 +45,17 @@ serve = [
     "asyncpg (>=0.30.0,<0.31.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
 ]
+dev = [
+    "pytest (>=8.3.5,<9.0.0)",
+    "pytest-cov (>=6.1.1,<7.0.0)",
+    "pytest-asyncio (>=0.26.0,<0.27.0)",
+    "sqlmodel (>=0.0.24,<0.0.25)",
+    "redis (>=6.0.0,<7.0.0)",
+    "fastapi (>=0.115.12,<0.116.0)",
+    "uvicorn (>=0.34.2,<0.35.0)",
+    "pre-commit (>=4.2.0,<5.0.0)",
+    "bm25s (>=0.2.13,<0.3.0)",
+]
 
 [project.scripts]
 nomos = "nomos.cli:main"
@@ -58,20 +69,3 @@ testpaths = ["tests"]
 omit = [
     "nomos/api/*"
 ]
-
-
-[tool.poetry]
-packages = [{ include = "nomos" }]
-include = ["nomos/py.typed"]
-
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pytest-cov = "^6.1.1"
-pytest-asyncio = "^0.26.0"
-sqlmodel = "^0.0.24"
-redis = "^6.0.0"
-fastapi = "^0.115.12"
-uvicorn = "^0.34.2"
-pre-commit = "^4.2.0"
-bm25s = "^0.2.13"
