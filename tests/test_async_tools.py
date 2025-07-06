@@ -1,9 +1,9 @@
 import asyncio
 import time
 
-from nomos.core import Agent
 from nomos.config import AgentConfig, ToolsConfig
-from nomos.models.agent import Action, Step, Route
+from nomos.core import Agent
+from nomos.models.agent import Action, Route, Step
 from nomos.models.tool import Tool
 
 

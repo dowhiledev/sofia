@@ -1,21 +1,22 @@
 """Common test fixtures for Nomos agent tests."""
 
-import pytest
 from typing import List
+
+import pytest
 from pydantic import BaseModel
 
-from nomos.models.agent import (
-    Message,
-    Step,
-    Route,
-    DecisionExample,
-    Decision,
-    Action,
-)
-from nomos.models.tool import ToolWrapper, ToolDef, ArgDef
-from nomos.llms import LLMBase
 from nomos.config import AgentConfig, ToolsConfig
 from nomos.core import Agent
+from nomos.llms import LLMBase
+from nomos.models.agent import (
+    Action,
+    Decision,
+    DecisionExample,
+    Message,
+    Route,
+    Step,
+)
+from nomos.models.tool import ArgDef, ToolDef, ToolWrapper
 from nomos.utils.logging import log_error
 
 
@@ -59,9 +60,9 @@ class MockLLM(LLMBase):
         if not self.responses:
             self.responses.append(response)
         # Check if the response schema matches the expected format schema
-        assert (
-            response.model_json_schema() == response_format.model_json_schema()
-        ), f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        assert response.model_json_schema() == response_format.model_json_schema(), (
+            f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        )
         return response
 
     def embed_text(self, text: str) -> List[float]:
@@ -93,9 +94,7 @@ def basic_steps():
         available_tools=["test_tool", "another_test_tool", "combinations"],
     )
 
-    end_step = Step(
-        step_id="end", description="End step", routes=[], available_tools=[]
-    )
+    end_step = Step(step_id="end", description="End step", routes=[], available_tools=[])
 
     return [start_step, end_step]
 

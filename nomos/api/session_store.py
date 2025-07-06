@@ -6,20 +6,16 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from loguru import logger
-
-from nomos.types import Session as AgentSession
-
 from redis.asyncio import Redis
-
-
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
-
 from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .agent import agent
+from nomos.types import Session as AgentSession
+
 from ..models.agent import State
+from .agent import agent
 
 
 class Session(SQLModel, table=True):  # type: ignore
@@ -68,9 +64,7 @@ class InMemoryStore:
             return self._store[key][0]
         return None
 
-    async def set(
-        self, key: str, value: AgentSession, ttl: Optional[int] = None
-    ) -> None:
+    async def set(self, key: str, value: AgentSession, ttl: Optional[int] = None) -> None:
         """Set session in in-memory store."""
         self._store[key] = (value, datetime.now(timezone.utc))
 
@@ -168,9 +162,7 @@ class SessionStore:
                 self.db.add(existing_session)
             else:
                 # Create new session
-                session_model = Session(
-                    session_id=session_id, session_data=session_data
-                )
+                session_model = Session(session_id=session_id, session_data=session_data)
                 self.db.add(session_model)
 
             await self.db.commit()

@@ -8,19 +8,17 @@ repos:
     - id: end-of-file-fixer
     - id: check-yaml
     - id: check-added-large-files
-- repo: https://github.com/psf/black
-  rev: 25.1.0
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.12.2
   hooks:
-    - id: black
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.3.0
-  hooks:
-    - id: flake8
-      args:
-        - --exclude=tests/*,cookbook/*
-        - --ignore=ANN101,E501,W503,ANN102,ANN001,ANN002,ANN003,D401,N803,N806,C416,E203,B008
-        - --max-line-length=100
-      additional_dependencies: [pep8-naming, flake8_import_order, flake8_docstrings, flake8_comprehensions, flake8_bugbear, flake8_annotations, flake8_simplify]
+    # Run the linter.
+    - id: ruff
+      types_or: [ python, pyi ]
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
+      types_or: [ python, pyi ]
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.16.1
   hooks:

@@ -64,9 +64,7 @@ class LLMBase:
         return "\n".join(tools_desc)
 
     @staticmethod
-    def format_history(
-        history: List[Union[Message, Step, Summary]], max_errors: int = 3
-    ) -> str:
+    def format_history(history: List[Union[Message, Step, Summary]], max_errors: int = 3) -> str:
         """
         Format the chat history for display or LLM input.
 
@@ -99,11 +97,7 @@ class LLMBase:
             ):
                 continue
             # If the fallback message is not the last one in the history, skip it
-            if (
-                isinstance(item, Message)
-                and item.role == "fallback"
-                and i < len(history) - 1
-            ):
+            if isinstance(item, Message) and item.role == "fallback" and i < len(history) - 1:
                 continue
             history_str.append(str(item))
         return "\n".join(history_str)
@@ -203,16 +197,13 @@ class LLMBase:
         :return: Parsed response as a BaseModel.
         """
         history = [
-            steps[item.step_id] if isinstance(item, StepIdentifier) else item
-            for item in history
+            steps[item.step_id] if isinstance(item, StepIdentifier) else item for item in history
         ]
         messages = self.get_messages(
             current_step=current_step,
             tools=tools,
             history=history,
-            system_message=(
-                system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip()
-            ),
+            system_message=(system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip()),
             persona=persona if persona else DEFAULT_PERSONA.strip(),
             max_examples=max_examples,
             embedding_model=embedding_model,
@@ -255,9 +246,7 @@ class LLMBase:
         available_step_ids = current_step.get_available_routes()
         if constraints and constraints.tool_name:
             current_step_tools = tuple(
-                tool
-                for tool in current_step_tools
-                if tool.name == constraints.tool_name
+                tool for tool in current_step_tools if tool.name == constraints.tool_name
             )
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
@@ -281,16 +270,12 @@ class LLMBase:
         }
 
         if not current_step.auto_flow and (
-            not constraints
-            or not constraints.fields
-            or "response" in constraints.fields
+            not constraints or not constraints.fields or "response" in constraints.fields
         ):
             if current_step.answer_model:
                 answer_model = current_step.get_answer_model()
                 response_type = Union.__getitem__((str, answer_model))
-                response_desc = (
-                    f"Response as string or {answer_model.__name__} if RESPOND."
-                )
+                response_desc = f"Response as string or {answer_model.__name__} if RESPOND."
             else:
                 response_type = str
                 response_desc = "Response (String) if RESPOND."
@@ -301,9 +286,7 @@ class LLMBase:
                 "default": None,
             }
             if current_step.quick_suggestions and (
-                not constraints
-                or not constraints.fields
-                or "suggestions" in constraints.fields
+                not constraints or not constraints.fields or "suggestions" in constraints.fields
             ):
                 params["suggestions"] = {
                     "type": List[str],
@@ -325,11 +308,7 @@ class LLMBase:
         if (
             len(tool_ids) > 0
             and len(tool_models) > 0
-            and (
-                not constraints
-                or not constraints.fields
-                or "tool_call" in constraints.fields
-            )
+            and (not constraints or not constraints.fields or "tool_call" in constraints.fields)
         ):
             tool_call_model = create_base_model(
                 "ToolCall",
@@ -355,9 +334,9 @@ class LLMBase:
                 "default": None,
             }
 
-        assert (
-            len(params) > 2
-        ), f"Something went wrong, Please check the step configuration for {current_step.step_id}. Params {params}"
+        assert len(params) > 2, (
+            f"Something went wrong, Please check the step configuration for {current_step.step_id}. Params {params}"
+        )
 
         model = create_base_model(
             "Decision",
@@ -430,9 +409,7 @@ class LLMBase:
         similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
         return float(similarity)
 
-    def generate_summary(
-        self, history: List[Union[Message, StepIdentifier, Summary]]
-    ) -> Summary:
+    def generate_summary(self, history: List[Union[Message, StepIdentifier, Summary]]) -> Summary:
         """
         Generate a summary of the conversation history.
 

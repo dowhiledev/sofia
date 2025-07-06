@@ -1,5 +1,5 @@
-import pytest
 from enum import Enum
+
 from nomos.utils.utils import create_base_model, create_enum
 
 

@@ -2,16 +2,14 @@
 
 from typing import Optional
 
+import yaml
 from pydantic import BaseModel, Field
-
 from rich.console import Console
 from rich.prompt import Confirm, Prompt
 
-import yaml
-
 from ..llms import LLMConfig
-from ..models.agent import Message, Route, Step as AgentStep
-
+from ..models.agent import Message, Route
+from ..models.agent import Step as AgentStep
 
 REASONING_PROMPT = """
 You are an expert agent configuration generator. Agent contains a set of steps and flows that the agent can take to achieve a specific goal.
@@ -61,9 +59,7 @@ class AgentConfiguration(BaseModel):
     """Configuration for the agent."""
 
     name: str = Field(..., description="Name of the agent (eg. 'example_agent')")
-    persona: str = Field(
-        ..., description="Description of the agent's purpose and high-level goals"
-    )
+    persona: str = Field(..., description="Description of the agent's purpose and high-level goals")
     steps: list[Step] = Field(default_factory=list, description="")
     start_step_id: Optional[str] = Field(
         default=None,
@@ -123,9 +119,7 @@ class AgentGenerator:
                     )
         return "\n".join(errors) if errors else None
 
-    def generate(
-        self, usecase: str, tools_available: Optional[str] = None
-    ) -> AgentConfiguration:
+    def generate(self, usecase: str, tools_available: Optional[str] = None) -> AgentConfiguration:
         """
         Generate a basic agent configuration based on the use case.
 
@@ -174,9 +168,7 @@ class AgentGenerator:
         ]
         last_response: Optional[AgentConfiguration] = None
         while _retries < self.max_retries:
-            response = self.llm.get_output(
-                messages=messages, response_format=AgentConfiguration
-            )
+            response = self.llm.get_output(messages=messages, response_format=AgentConfiguration)
             errors = self.validate_agent_configuration(response)
             if not errors:
                 last_response = response
@@ -198,9 +190,9 @@ class AgentGenerator:
             self.console.print(
                 "Failed to generate a valid agent configuration after multiple attempts."
             )
-        assert isinstance(
-            last_response, AgentConfiguration
-        ), "Response is not of type AgentConfiguration"
+        assert isinstance(last_response, AgentConfiguration), (
+            "Response is not of type AgentConfiguration"
+        )
         return last_response
 
 

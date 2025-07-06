@@ -4,8 +4,8 @@ from typing import List
 
 from pydantic import BaseModel
 
-from .base import LLMBase
 from ..models.agent import Message
+from .base import LLMBase
 
 
 class Anthropic(LLMBase):
@@ -73,9 +73,7 @@ class Anthropic(LLMBase):
             **kwargs,
         )
         tool_use = next(block for block in response.content if block.type == "tool_use")
-        assert (
-            tool_use.name == _output_tool["name"]
-        ), "Unexpected tool use name in response"
+        assert tool_use.name == _output_tool["name"], "Unexpected tool use name in response"
         assert tool_use.input, "Tool use input is empty"
         return response_format.model_validate(tool_use.input)
 

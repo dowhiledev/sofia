@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from pydantic import BaseModel, Field
+
 from nomos.llms import LLMBase
 from nomos.models.agent import Message
-
-from pydantic import BaseModel, Field
 
 
 class AssertionResult(BaseModel):

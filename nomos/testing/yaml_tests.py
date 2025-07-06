@@ -5,12 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from nomos.llms import LLMConfig
-from nomos.models.agent import Message, State, StepIdentifier, Summary
-
+import yaml
 from pydantic import BaseModel, Field
 
-import yaml
+from nomos.llms import LLMConfig
+from nomos.models.agent import Message, State, StepIdentifier, Summary
 
 
 class HistoryItem(BaseModel):

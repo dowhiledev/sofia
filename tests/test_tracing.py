@@ -49,9 +49,7 @@ def _create_mock_opentelemetry_modules():
     trace_mod.status = status_mod
 
     # Exporter module
-    exporter_mod = types.ModuleType(
-        "opentelemetry.exporter.otlp.proto.http.trace_exporter"
-    )
+    exporter_mod = types.ModuleType("opentelemetry.exporter.otlp.proto.http.trace_exporter")
     exporter_mod.OTLPSpanExporter = MagicMock()
 
     # SDK modules
@@ -91,9 +89,7 @@ def _load_tracing(monkeypatch):
     monkeypatch.setitem(sys.modules, "opentelemetry.trace", modules["trace"])
     monkeypatch.setitem(sys.modules, "opentelemetry.trace.status", modules["status"])
     monkeypatch.setitem(sys.modules, "opentelemetry.exporter", root_mod.exporter)
-    monkeypatch.setitem(
-        sys.modules, "opentelemetry.exporter.otlp", types.ModuleType("op.exp.otlp")
-    )
+    monkeypatch.setitem(sys.modules, "opentelemetry.exporter.otlp", types.ModuleType("op.exp.otlp"))
     monkeypatch.setitem(
         sys.modules,
         "opentelemetry.exporter.otlp.proto",
@@ -111,9 +107,7 @@ def _load_tracing(monkeypatch):
     )
 
     root_mod.instrumentation.instrumentor = modules["instrumentor"]
-    monkeypatch.setitem(
-        sys.modules, "opentelemetry.instrumentation", root_mod.instrumentation
-    )
+    monkeypatch.setitem(sys.modules, "opentelemetry.instrumentation", root_mod.instrumentation)
     monkeypatch.setitem(
         sys.modules,
         "opentelemetry.instrumentation.instrumentor",
@@ -124,9 +118,7 @@ def _load_tracing(monkeypatch):
     root_mod.sdk.trace.export = modules["sdk_export"]
     monkeypatch.setitem(sys.modules, "opentelemetry.sdk", root_mod.sdk)
     monkeypatch.setitem(sys.modules, "opentelemetry.sdk.trace", modules["sdk_trace"])
-    monkeypatch.setitem(
-        sys.modules, "opentelemetry.sdk.trace.export", modules["sdk_export"]
-    )
+    monkeypatch.setitem(sys.modules, "opentelemetry.sdk.trace.export", modules["sdk_export"])
 
     tracing = importlib.import_module("nomos.utils.tracing")
     importlib.reload(tracing)
@@ -158,7 +150,6 @@ class TestNomosInstrumentor:
             patch("nomos.utils.tracing.Agent", mock_agent),
             patch("nomos.utils.tracing.Session", mock_session),
         ):
-
             instrumentor = tracing.NomosInstrumentor()
             instrumentor._instrument()
 
@@ -200,7 +191,6 @@ class TestNomosInstrumentor:
             patch("nomos.utils.tracing.Agent", mock_agent),
             patch("nomos.utils.tracing.Session", mock_session),
         ):
-
             instrumentor = tracing.NomosInstrumentor()
             instrumentor._uninstrument()
 
@@ -258,9 +248,7 @@ class TestInitializeAndShutdownTracing:
         tracing.initialize_tracing(tracer_kwargs, exporter_kwargs, processor_kwargs)
 
         modules["trace"].set_tracer_provider.assert_called_once()
-        modules["sdk_trace"].TracerProvider.assert_called_once_with(
-            resource="custom_resource"
-        )
+        modules["sdk_trace"].TracerProvider.assert_called_once_with(resource="custom_resource")
         modules["exporter"].OTLPSpanExporter.assert_called_once()
         # Check that custom exporter kwargs were passed
         call_args = modules["exporter"].OTLPSpanExporter.call_args
@@ -277,9 +265,7 @@ class TestInitializeAndShutdownTracing:
         tracing, modules = _load_tracing(monkeypatch)
 
         # Set environment variables
-        monkeypatch.setenv(
-            "ELASTIC_APM_SERVER_URL", "https://custom-apm.example.com:8200"
-        )
+        monkeypatch.setenv("ELASTIC_APM_SERVER_URL", "https://custom-apm.example.com:8200")
         monkeypatch.setenv("ELASTIC_APM_TOKEN", "secret-token-123")
 
         tracer_instance = MagicMock()
@@ -293,13 +279,8 @@ class TestInitializeAndShutdownTracing:
 
         # Verify that the exporter was called with the correct endpoint and headers
         call_args = modules["exporter"].OTLPSpanExporter.call_args
-        assert (
-            call_args.kwargs["endpoint"]
-            == "https://custom-apm.example.com:8200/v1/traces"
-        )
-        assert call_args.kwargs["headers"] == {
-            "Authorization": "Bearer secret-token-123"
-        }
+        assert call_args.kwargs["endpoint"] == "https://custom-apm.example.com:8200/v1/traces"
+        assert call_args.kwargs["headers"] == {"Authorization": "Bearer secret-token-123"}
 
     def test_shutdown_tracing(self, monkeypatch):
         """Test shutdown_tracing uninstruments properly."""
@@ -660,9 +641,7 @@ class TestRegressionScenarios:
         tracing, modules = _load_tracing(monkeypatch)
 
         # Test with custom environment variables
-        monkeypatch.setenv(
-            "ELASTIC_APM_SERVER_URL", "https://test-apm.example.com:8200"
-        )
+        monkeypatch.setenv("ELASTIC_APM_SERVER_URL", "https://test-apm.example.com:8200")
         monkeypatch.setenv("ELASTIC_APM_TOKEN", "test-token-456")
 
         tracer_instance = MagicMock()
@@ -676,10 +655,7 @@ class TestRegressionScenarios:
 
         # Verify environment variables were used
         call_args = modules["exporter"].OTLPSpanExporter.call_args
-        assert (
-            "https://test-apm.example.com:8200/v1/traces"
-            in call_args.kwargs["endpoint"]
-        )
+        assert "https://test-apm.example.com:8200/v1/traces" in call_args.kwargs["endpoint"]
         assert "test-token-456" in call_args.kwargs["headers"]["Authorization"]
 
     def test_safe_attribute_access_patterns(self, monkeypatch):

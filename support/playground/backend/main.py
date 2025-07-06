@@ -9,12 +9,11 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from nomos.api.models import ChatRequest, ChatResponse
 from nomos.core import Agent, AgentConfig
 from nomos.models.agent import Response
-
-from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -91,9 +90,7 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
     from tools import tool_list
 
     # Snapshot current environment state
-    original_env = (
-        dict(os.environ) if DISABLE_AGENT_CACHE and request.env_vars else None
-    )
+    original_env = dict(os.environ) if DISABLE_AGENT_CACHE and request.env_vars else None
 
     try:
         # Update environment variables

@@ -17,7 +17,6 @@ from typing import (
 )
 
 from docstring_parser import parse
-
 from pydantic import BaseModel, ValidationError
 
 from ..utils.utils import create_base_model, parse_type
@@ -90,9 +89,7 @@ class Tool(BaseModel):
         sig = inspect.signature(function)
         name = name or function.__name__
         description = (
-            parse(function.__doc__.strip()).short_description
-            if function.__doc__
-            else None
+            parse(function.__doc__.strip()).short_description if function.__doc__ else None
         ) or ""
 
         _doc_params = parse(function.__doc__.strip()).params if function.__doc__ else []
@@ -108,8 +105,7 @@ class Tool(BaseModel):
             description = tool_def.desc or description
             for arg in tool_def.args or []:
                 tool_arg_defs[arg.key] = {
-                    "description": arg.desc
-                    or tool_arg_defs.get(arg.key, {}).get("description"),
+                    "description": arg.desc or tool_arg_defs.get(arg.key, {}).get("description"),
                     "type": arg.type or tool_arg_defs.get(arg.key, {}).get("type"),
                 }
 
@@ -161,12 +157,12 @@ class Tool(BaseModel):
         try:
             module = __import__(module_name, fromlist=[function_name])
             function = getattr(module, function_name, None)
-            assert (
-                function is not None
-            ), f"Function '{function_name}' not found in module '{module_name}'."
-            assert callable(
-                function
-            ), f"'{function_name}' in module '{module_name}' is not callable."
+            assert function is not None, (
+                f"Function '{function_name}' not found in module '{module_name}'."
+            )
+            assert callable(function), (
+                f"'{function_name}' in module '{module_name}' is not callable."
+            )
             return cls.from_function(function, tool_defs, name)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")
@@ -188,33 +184,22 @@ class Tool(BaseModel):
         :return: An instance of Tool.
         """
         from crewai.tools import BaseTool
-        from pydantic import create_model, BaseModel, ConfigDict
+        from pydantic import BaseModel, ConfigDict, create_model
 
-        def rename_pydantic_model(
-            model: type[BaseModel], new_name: str
-        ) -> type[BaseModel]:
+        def rename_pydantic_model(model: type[BaseModel], new_name: str) -> type[BaseModel]:
             """Rename a Pydantic model while preserving its fields and defaults."""
-            fields = {
-                name: (field.annotation, field)
-                for name, field in model.model_fields.items()
-            }
-            return create_model(
-                new_name, **fields, __config__=ConfigDict(extra="forbid")
-            )
+            fields = {name: (field.annotation, field) for name, field in model.model_fields.items()}
+            return create_model(new_name, **fields, __config__=ConfigDict(extra="forbid"))
 
         tool_kwargs = tool_kwargs or {}
 
         module = __import__("crewai_tools", fromlist=[tool_id])
         tool_class = getattr(module, tool_id, None)
-        assert (
-            tool_class is not None
-        ), f"Tool class {tool_id} not found in crewai_tools module"
+        assert tool_class is not None, f"Tool class {tool_id} not found in crewai_tools module"
 
         try:
             tool_instance = tool_class(**tool_kwargs)
-            assert isinstance(
-                tool_instance, BaseTool
-            ), f"{tool_id} is not a valid CrewAI tool"
+            assert isinstance(tool_instance, BaseTool), f"{tool_id} is not a valid CrewAI tool"
             structured_tool = tool_instance.to_structured_tool()
             camel_case_fn_name = name.replace("_", " ").title().replace(" ", "")
             new_tool_args_model = rename_pydantic_model(

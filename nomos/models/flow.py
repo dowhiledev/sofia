@@ -79,9 +79,7 @@ class Flow:
         self.active_contexts: Dict[str, FlowContext] = {}
 
         # Initialize components
-        component_registry = (
-            component_registry or self._get_default_component_registry()
-        )
+        component_registry = component_registry or self._get_default_component_registry()
         for component_name, component_config in config.components.items():
             if component_name in component_registry:
                 self.components[component_name] = component_registry[component_name](
