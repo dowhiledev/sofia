@@ -31,7 +31,7 @@ jobs:
 
     - name: Install External tool dependencies
       run: |
-        uv run pip install 'crewai[tools]'
+        uv add 'crewai[tools]'
 
     - name: Run tests with pytest
       run: uv run pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy --ignore=examples
