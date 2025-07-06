@@ -18,9 +18,7 @@ class SimulationDecision(Enum):  # noqa
 
 
 class NextInput(BaseModel):  # noqa
-    reasoning: List[str] = Field(
-        ..., description="Reason Step by step on deciding what to do next"
-    )
+    reasoning: List[str] = Field(..., description="Reason Step by step on deciding what to do next")
     decision: SimulationDecision = Field(
         ..., description="What to do next, either continue the conversation or assert"
     )

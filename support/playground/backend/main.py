@@ -90,9 +90,7 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
     from tools import tool_list
 
     # Snapshot current environment state
-    original_env = (
-        dict(os.environ) if DISABLE_AGENT_CACHE and request.env_vars else None
-    )
+    original_env = dict(os.environ) if DISABLE_AGENT_CACHE and request.env_vars else None
 
     try:
         # Update environment variables

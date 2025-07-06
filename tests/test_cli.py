@@ -118,16 +118,13 @@ class TestInitCommand:
                 patch("nomos.cli.Prompt.ask") as mock_prompt,
                 patch("nomos.cli.Confirm.ask") as mock_confirm,
             ):
-
                 mock_prompt.side_effect = [
                     "1",  # LLM choice
                     "basic",  # template choice
                 ]
                 mock_confirm.side_effect = [False, False]
 
-                result = self.runner.invoke(
-                    app, ["init", "--directory", str(project_dir)]
-                )
+                result = self.runner.invoke(app, ["init", "--directory", str(project_dir)])
 
                 assert result.exit_code == 0
                 assert (project_dir / "config.agent.yaml").exists()
@@ -205,7 +202,6 @@ class TestInitCommand:
                 patch("nomos.cli.Prompt.ask") as mock_prompt,
                 patch("nomos.cli.Confirm.ask") as mock_confirm,
             ):
-
                 mock_prompt.return_value = str(project_dir)
                 mock_confirm.return_value = False  # User says no to continue
 
@@ -225,9 +221,7 @@ class TestInitCommand:
                     "1",  # LLM choice
                 ]
 
-                result = self.runner.invoke(
-                    app, ["init", "--template", "invalid_template"]
-                )
+                result = self.runner.invoke(app, ["init", "--template", "invalid_template"])
 
                 assert result.exit_code == 1
                 assert "not found" in result.stdout
@@ -305,9 +299,7 @@ llm:
             config_file.flush()
 
             try:
-                result = self.runner.invoke(
-                    app, ["run", "--config", config_file.name, "--verbose"]
-                )
+                result = self.runner.invoke(app, ["run", "--config", config_file.name, "--verbose"])
 
                 assert result.exit_code == 0
                 mock_run.assert_called_once()
@@ -354,9 +346,7 @@ class TestServeCommand:
 
     def test_serve_missing_config(self):
         """Test serve command with missing config file."""
-        result = self.runner.invoke(
-            app, ["serve", "--config", "nonexistent_config.yaml"]
-        )
+        result = self.runner.invoke(app, ["serve", "--config", "nonexistent_config.yaml"])
 
         assert result.exit_code == 1
         assert "Configuration file not found" in result.stdout
@@ -476,9 +466,7 @@ class TestSchemaCommand:
         """Test schema command output to file."""
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as output_file:
             try:
-                result = self.runner.invoke(
-                    app, ["schema", "--output", output_file.name]
-                )
+                result = self.runner.invoke(app, ["schema", "--output", output_file.name])
 
                 assert result.exit_code == 0
                 assert "Schema written" in result.stdout
@@ -533,12 +521,8 @@ class TestGenerateProjectFiles:
         with tempfile.TemporaryDirectory() as temp_dir:
             target_dir = Path(temp_dir)
 
-            with pytest.raises(
-                AssertionError, match="At least one step must be defined"
-            ):
-                _generate_project_files(
-                    target_dir, "test_agent", "persona", "OpenAI", []
-                )
+            with pytest.raises(AssertionError, match="At least one step must be defined"):
+                _generate_project_files(target_dir, "test_agent", "persona", "OpenAI", [])
 
 
 class TestConfigGeneration:

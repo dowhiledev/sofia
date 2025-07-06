@@ -25,9 +25,7 @@ class LLMConfig(BaseModel):
         kwargs (dict): Additional parameters for the LLM API.
     """
 
-    provider: Literal[
-        "openai", "mistral", "google", "ollama", "huggingface", "anthropic"
-    ]
+    provider: Literal["openai", "mistral", "google", "ollama", "huggingface", "anthropic"]
     model: str
     embedding_model: Optional[str] = None
     kwargs: Dict[str, str] = {}

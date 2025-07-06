@@ -199,23 +199,17 @@ class Step(BaseModel):
         :return: List of tuples containing DecisionExample and its similarity score.
         """
         _always = [
-            (example, 1.0)
-            for example in self.examples or []
-            if example.visibility == "always"
+            (example, 1.0) for example in self.examples or [] if example.visibility == "always"
         ]
         dynamic_examples = [
-            example
-            for example in self.examples or []
-            if example.visibility == "dynamic"
+            example for example in self.examples or [] if example.visibility == "dynamic"
         ]
         _examples = [
             (example, similarity_fn(example.embedding(embedding_model), context_emb))
             for example in dynamic_examples
         ]
         # Only keep the top (max_examples - len(_always)) dynamic examples by similarity
-        _examples = heapq.nlargest(
-            max_examples - len(_always), _examples, key=lambda x: x[1]
-        )
+        _examples = heapq.nlargest(max_examples - len(_always), _examples, key=lambda x: x[1])
         examples = _always + _examples
         return [example for example, similarity in examples if similarity >= threshold]
 
@@ -254,9 +248,7 @@ class Message(BaseModel):
 class Summary(BaseModel):
     """Summary of a list of messages."""
 
-    summary: List[str] = Field(
-        ..., description="Detailed summary of the Context. (Min 5 items)"
-    )
+    summary: List[str] = Field(..., description="Detailed summary of the Context. (Min 5 items)")
 
     @property
     def content(self) -> str:
@@ -273,9 +265,7 @@ class FlowState(BaseModel):
 
     flow_id: str
     flow_context: "FlowContext"
-    flow_memory_context: List[Union[Message, Summary, StepIdentifier]] = Field(
-        default_factory=list
-    )
+    flow_memory_context: List[Union[Message, Summary, StepIdentifier]] = Field(default_factory=list)
 
 
 class State(BaseModel):
@@ -361,9 +351,7 @@ def create_action_enum(actions: List[str]) -> Enum:
     :param actions: Dictionary of action names to values.
     :return: A dynamically created Enum class.
     """
-    actions_dict = {
-        action: action.upper() for action in actions if isinstance(action, str)
-    }
+    actions_dict = {action: action.upper() for action in actions if isinstance(action, str)}
     return create_enum("Action", actions_dict)
 
 

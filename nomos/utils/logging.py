@@ -75,9 +75,7 @@ def pp_response(response: "Response") -> None:
             f"{decision.response}",
         )
         if decision.suggestions:
-            print(
-                f"{Style.DIM}Suggestions: {', '.join(decision.suggestions)}{Style.RESET_ALL}"
-            )
+            print(f"{Style.DIM}Suggestions: {', '.join(decision.suggestions)}{Style.RESET_ALL}")
 
     elif decision.action == Action.TOOL_CALL and decision.tool_call:
         print(f"{Style.BRIGHT}{Fore.MAGENTA}Running Tool:{Style.RESET_ALL}")

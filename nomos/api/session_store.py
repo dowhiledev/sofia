@@ -64,9 +64,7 @@ class InMemoryStore:
             return self._store[key][0]
         return None
 
-    async def set(
-        self, key: str, value: AgentSession, ttl: Optional[int] = None
-    ) -> None:
+    async def set(self, key: str, value: AgentSession, ttl: Optional[int] = None) -> None:
         """Set session in in-memory store."""
         self._store[key] = (value, datetime.now(timezone.utc))
 
@@ -164,9 +162,7 @@ class SessionStore:
                 self.db.add(existing_session)
             else:
                 # Create new session
-                session_model = Session(
-                    session_id=session_id, session_data=session_data
-                )
+                session_model = Session(session_id=session_id, session_data=session_data)
                 self.db.add(session_model)
 
             await self.db.commit()

@@ -40,9 +40,7 @@ class TestFlowContext:
 
     def test_flow_context_creation(self):
         """Test creating a FlowContext."""
-        context = FlowContext(
-            flow_id="test_flow", entry_step="step1", metadata={"test": "value"}
-        )
+        context = FlowContext(flow_id="test_flow", entry_step="step1", metadata={"test": "value"})
 
         assert context.flow_id == "test_flow"
         assert context.entry_step == "step1"
@@ -52,9 +50,7 @@ class TestFlowContext:
     def test_flow_context_with_previous_context(self):
         """Test FlowContext with previous context."""
         messages = [Message(role="user", content="Hello")]
-        context = FlowContext(
-            flow_id="test_flow", entry_step="step1", previous_context=messages
-        )
+        context = FlowContext(flow_id="test_flow", entry_step="step1", previous_context=messages)
 
         assert context.previous_context == messages
 
@@ -69,9 +65,7 @@ class TestFlowConfig:
             enters=["step1", "step2"],
             exits=["step3", "step4"],
             description="Test flow",
-            components={
-                "memory": {"llm": {"provider": "openai", "model": "gpt-4o-mini"}}
-            },
+            components={"memory": {"llm": {"provider": "openai", "model": "gpt-4o-mini"}}},
         )
 
         assert config.flow_id == "test_flow"
@@ -259,18 +253,14 @@ class TestFlowManager:
         self.manager = FlowManager()
 
         # Create test flows
-        self.flow1_config = FlowConfig(
-            flow_id="flow1", enters=["step1"], exits=["step2"]
-        )
+        self.flow1_config = FlowConfig(flow_id="flow1", enters=["step1"], exits=["step2"])
         self.flow1_steps = [
             Step(step_id="step1", description="Step 1"),
             Step(step_id="step2", description="Step 2"),
         ]
         self.flow1 = Flow(config=self.flow1_config, steps=self.flow1_steps)
 
-        self.flow2_config = FlowConfig(
-            flow_id="flow2", enters=["step2"], exits=["step3"]
-        )
+        self.flow2_config = FlowConfig(flow_id="flow2", enters=["step2"], exits=["step3"])
         self.flow2_steps = [
             Step(step_id="step2", description="Step 2"),
             Step(step_id="step3", description="Step 3"),
@@ -360,9 +350,7 @@ class TestFlowManager:
         context1 = flow1.enter("step1")
 
         # Transition to second flow
-        new_context = self.manager.transition_between_flows(
-            flow1, flow2, "step2", context1
-        )
+        new_context = self.manager.transition_between_flows(flow1, flow2, "step2", context1)
 
         # Check that first flow was exited
         assert mock_component1.exited is True

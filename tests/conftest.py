@@ -60,9 +60,9 @@ class MockLLM(LLMBase):
         if not self.responses:
             self.responses.append(response)
         # Check if the response schema matches the expected format schema
-        assert (
-            response.model_json_schema() == response_format.model_json_schema()
-        ), f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        assert response.model_json_schema() == response_format.model_json_schema(), (
+            f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        )
         return response
 
     def embed_text(self, text: str) -> List[float]:
@@ -94,9 +94,7 @@ def basic_steps():
         available_tools=["test_tool", "another_test_tool", "combinations"],
     )
 
-    end_step = Step(
-        step_id="end", description="End step", routes=[], available_tools=[]
-    )
+    end_step = Step(step_id="end", description="End step", routes=[], available_tools=[])
 
     return [start_step, end_step]
 

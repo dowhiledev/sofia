@@ -342,10 +342,7 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     crewai_tool = session.tools.get("file_read_tool")
     assert crewai_tool is not None
     assert (
-        crewai_tool.get_args_model()
-        .model_json_schema()
-        .get("properties", {})
-        .get("file_path")
+        crewai_tool.get_args_model().model_json_schema().get("properties", {}).get("file_path")
         is not None
     )
 
@@ -353,10 +350,7 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     pdf_search_tool = session.tools.get("pdf_search_tool")
     assert pdf_search_tool is not None
     assert (
-        pdf_search_tool.get_args_model()
-        .model_json_schema()
-        .get("properties", {})
-        .get("query")
+        pdf_search_tool.get_args_model().model_json_schema().get("properties", {}).get("query")
         is not None
     )
 
@@ -374,11 +368,7 @@ class TestAgentValidation:
         from nomos.llms.base import LLMBase
 
         mock_llm = MagicMock(spec=LLMBase)
-        steps = [
-            Step(
-                step_id="valid_step", description="Valid", available_tools=[], routes=[]
-            )
-        ]
+        steps = [Step(step_id="valid_step", description="Valid", available_tools=[], routes=[])]
 
         with pytest.raises(ValueError, match="Start step ID invalid_step not found"):
             Agent(
@@ -468,9 +458,7 @@ class TestStepTransitions:
         session = basic_agent.create_session()
 
         # Mock decision for valid move
-        valid_decision = Decision(
-            reasoning=["Move to end"], action=Action.MOVE, step_id="end"
-        )
+        valid_decision = Decision(reasoning=["Move to end"], action=Action.MOVE, step_id="end")
 
         with patch.object(session, "_get_next_decision", return_value=valid_decision):
             initial_step = session.current_step.step_id
@@ -531,11 +519,7 @@ class TestFromConfigErrors:
         """Test error when no LLM provided to from_config."""
         config = AgentConfig(
             name="test",
-            steps=[
-                Step(
-                    step_id="start", description="Start", available_tools=[], routes=[]
-                )
-            ],
+            steps=[Step(step_id="start", description="Start", available_tools=[], routes=[])],
             start_step_id="start",
         )
 
@@ -574,9 +558,7 @@ class TestMemoryOperations:
         session._add_step_identifier(step_id)
 
         # Step identifier should be added to session memory
-        step_ids = [
-            msg for msg in session.memory.context if isinstance(msg, StepIdentifier)
-        ]
+        step_ids = [msg for msg in session.memory.context if isinstance(msg, StepIdentifier)]
         assert len(step_ids) == 1
         assert step_ids[0].step_id == "test_step"
 
@@ -601,9 +583,7 @@ class TestSessionStateOperations:
         """Test creating session from State object."""
         from nomos.models.agent import State, history_to_types
 
-        history = history_to_types(
-            [{"role": "user", "content": "Hello"}, {"step_id": "start"}]
-        )
+        history = history_to_types([{"role": "user", "content": "Hello"}, {"step_id": "start"}])
 
         state = State(
             session_id="test_session",
@@ -619,9 +599,7 @@ class TestSessionStateOperations:
 
     def test_get_session_from_state_invalid_history(self, basic_agent):
         """Test error handling for invalid history items."""
-        with pytest.raises(
-            ValueError, match="Unknown history item type: <class 'str'>"
-        ):
+        with pytest.raises(ValueError, match="Unknown history item type: <class 'str'>"):
             from nomos.models.agent import history_to_types
 
             history_to_types(["invalid_item"])
@@ -976,9 +954,7 @@ class TestAdvancedErrorHandling:
             current_step_tools=session._get_current_step_tools(),
             constraints=DecisionConstraints(actions=["RESPOND"], fields=["response"]),
         )
-        valid_resp = valid_resp_model(
-            reasoning=["r"], action=Action.RESPOND.value, response="ok"
-        )
+        valid_resp = valid_resp_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
         basic_agent.llm.set_response(invalid_resp)
         basic_agent.llm.set_response(valid_resp, append=True)
 
@@ -1193,9 +1169,7 @@ class TestAgentNext:
         )
         basic_agent.llm.set_response(response)
 
-        res = basic_agent.next(
-            user_input="Hello", session_data=session_context, verbose=True
-        )
+        res = basic_agent.next(user_input="Hello", session_data=session_context, verbose=True)
 
         assert res.decision.action == Action.RESPOND
         assert hasattr(res.state, "session_id")
@@ -1255,9 +1229,7 @@ class TestStepExamples:
             current_step_tools=tuple(session._get_current_step_tools()),
         )
 
-        response = decision_model(
-            reasoning=["r"], action=Action.RESPOND.value, response="ok"
-        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
         example_agent.llm.set_response(response)
         session.next("sqrt 4")
         system_prompt = session.llm.messages_received[0].content

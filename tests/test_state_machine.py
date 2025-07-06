@@ -33,9 +33,7 @@ def test_state_machine_invalid_transition():
 
 def test_state_machine_flow_transitions():
     steps = {
-        "s1": Step(
-            step_id="s1", description="s1", routes=[Route(target="s2", condition="")]
-        ),
+        "s1": Step(step_id="s1", description="s1", routes=[Route(target="s2", condition="")]),
         "s2": Step(step_id="s2", description="s2", routes=[]),
     }
     flow_cfg = FlowConfig(flow_id="f1", enters=["s1"], exits=["s2"])

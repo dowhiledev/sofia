@@ -44,9 +44,7 @@ class HuggingFace(LLMBase):
     def generate(self, messages: List[Message], **kwargs: dict) -> str:
         """Generate a plain text response from HuggingFace."""
         _messages = [msg.model_dump() for msg in messages]
-        comp = self.client.chat.completions.create(
-            model=self.model, messages=_messages, **kwargs
-        )
+        comp = self.client.chat.completions.create(model=self.model, messages=_messages, **kwargs)
         return comp.choices[0].message.content if comp.choices else ""
 
 

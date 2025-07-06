@@ -131,9 +131,7 @@ def parse_yaml_config(file_path: str) -> Dict[str, Any]:
         raise ValueError(f"Error parsing YAML: {e}")
 
 
-def generate_mermaid_flowchart(
-    config: Dict[str, Any], include_styling: bool = True
-) -> str:
+def generate_mermaid_flowchart(config: Dict[str, Any], include_styling: bool = True) -> str:
     """Generate enhanced Mermaid flowchart from config."""
     steps = config.get("steps", [])
     flows = config.get("flows", [])
@@ -209,16 +207,12 @@ def generate_mermaid_flowchart(
 
                 # Create node definition with icons
                 if node_class == "endStyle":
-                    mermaid_lines.append(
-                        f'        {sanitized_id}(["🏁 {description}"])'
-                    )
+                    mermaid_lines.append(f'        {sanitized_id}(["🏁 {description}"])')
                 elif node_class == "startStyle":
                     mermaid_lines.append(f'        {sanitized_id}["👋 {description}"]')
                 elif tools:
                     tool_icons = "🛠️" if tools else ""
-                    mermaid_lines.append(
-                        f'        {sanitized_id}["{tool_icons} {description}"]'
-                    )
+                    mermaid_lines.append(f'        {sanitized_id}["{tool_icons} {description}"]')
                 else:
                     mermaid_lines.append(f'        {sanitized_id}["{description}"]')
 
@@ -248,9 +242,7 @@ def generate_mermaid_flowchart(
                     mermaid_lines.append(f'    {sanitized_id}["👋 {description}"]')
                 elif tools:
                     tool_icons = "🛠️" if tools else ""
-                    mermaid_lines.append(
-                        f'    {sanitized_id}["{tool_icons} {description}"]'
-                    )
+                    mermaid_lines.append(f'    {sanitized_id}["{tool_icons} {description}"]')
                 else:
                     mermaid_lines.append(f'    {sanitized_id}["{description}"]')
             mermaid_lines.append("")
@@ -295,9 +287,7 @@ def generate_mermaid_flowchart(
                     mermaid_lines.append(f'    {sanitized_id}["👋 {description}"]')
                 elif tools:
                     tool_text = " ".join([f"🛠️ {tool}" for tool in tools])
-                    mermaid_lines.append(
-                        f'    {sanitized_id}["{tool_text} {description}"]'
-                    )
+                    mermaid_lines.append(f'    {sanitized_id}["{tool_text} {description}"]')
                 else:
                     mermaid_lines.append(f'    {sanitized_id}["{description}"]')
 
@@ -322,9 +312,7 @@ def generate_mermaid_flowchart(
                 condition = condition.replace("User ", "")
                 condition = condition.replace(" or ", "/")
                 condition_text = truncate_text(condition, 25)
-                mermaid_lines.append(
-                    f"    {sanitized_id} -->|{condition_text}| {sanitized_target}"
-                )
+                mermaid_lines.append(f"    {sanitized_id} -->|{condition_text}| {sanitized_target}")
             else:
                 mermaid_lines.append(f"    {sanitized_id} --> {sanitized_target}")
 
@@ -519,18 +507,14 @@ def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
         "flows": flows_info,
         "tools": {"available_tools": sorted(list(all_tools)), "tool_usage": {}},  # noqa
         "visualization": {
-            "mermaid_flowchart": generate_mermaid_flowchart(
-                config, include_styling=True
-            ),
+            "mermaid_flowchart": generate_mermaid_flowchart(config, include_styling=True),
             "summary_markdown": generate_summary(config),
         },
     }
 
     # Add tool usage statistics
     for tool in all_tools:
-        tool_steps = [
-            s["step_id"] for s in steps if tool in s.get("available_tools", [])
-        ]
+        tool_steps = [s["step_id"] for s in steps if tool in s.get("available_tools", [])]
         config_json["tools"]["tool_usage"][tool] = {  # type: ignore
             "used_in_steps": tool_steps,
             "usage_count": len(tool_steps),
@@ -558,9 +542,7 @@ Examples:
         default="config.agent.yaml",
         help="Input YAML file (default: config.agent.yaml)",
     )
-    parser.add_argument(
-        "--output", "-o", type=str, help="Output file path (default: stdout)"
-    )
+    parser.add_argument("--output", "-o", type=str, help="Output file path (default: stdout)")
     parser.add_argument(
         "--summary", "-s", action="store_true", help="Include configuration summary"
     )
@@ -570,9 +552,7 @@ Examples:
         default=True,
         help="Include Mermaid styling (default: True)",
     )
-    parser.add_argument(
-        "--no-style", action="store_true", help="Disable Mermaid styling"
-    )
+    parser.add_argument("--no-style", action="store_true", help="Disable Mermaid styling")
     parser.add_argument(
         "--json", "-j", action="store_true", help="Output as JSON instead of markdown"
     )

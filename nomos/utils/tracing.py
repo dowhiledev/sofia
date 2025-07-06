@@ -68,12 +68,8 @@ class NomosInstrumentor(BaseInstrumentor):
                 attributes={
                     "session.id": self_.session_id,
                     "current_step": getattr(self_.current_step, "step_id", None),
-                    "step.description": getattr(
-                        self_.current_step, "description", None
-                    ),
-                    "step.available_routes": str(
-                        getattr(self_.current_step, "routes", [])
-                    ),
+                    "step.description": getattr(self_.current_step, "description", None),
+                    "step.available_routes": str(getattr(self_.current_step, "routes", [])),
                     "history.length": len(getattr(self_, "history", [])),
                 },
             ) as span:
@@ -83,9 +79,7 @@ class NomosInstrumentor(BaseInstrumentor):
                         "decision.action",
                         getattr(getattr(res.decision, "action", None), "value", None),
                     )
-                    span.set_attribute(
-                        "decision.input", getattr(res.decision, "input", None)
-                    )
+                    span.set_attribute("decision.input", getattr(res.decision, "input", None))
                     if getattr(res.decision, "tool_name", None):
                         span.set_attribute("tool.name", res.decision.tool_name)
                         span.set_attribute(
@@ -97,9 +91,7 @@ class NomosInstrumentor(BaseInstrumentor):
                     return res
                 except Exception as e:
                     span.record_exception(e)
-                    span.set_status(
-                        trace.status.Status(trace.status.StatusCode.ERROR, str(e))
-                    )
+                    span.set_status(trace.status.Status(trace.status.StatusCode.ERROR, str(e)))
                     raise
 
         Session.next = traced_next  # type: ignore
@@ -120,8 +112,7 @@ class NomosInstrumentor(BaseInstrumentor):
                     "session.id": self_.session_id,
                     "tool.name": tool_name,
                     "tool.kwargs": str(kwargs),
-                    "step.id": getattr(self_, "current_step", None)
-                    and self_.current_step.step_id,
+                    "step.id": getattr(self_, "current_step", None) and self_.current_step.step_id,
                 },
             ) as span:
                 try:
@@ -132,9 +123,7 @@ class NomosInstrumentor(BaseInstrumentor):
                 except Exception as e:
                     span.record_exception(e)
                     span.set_attribute("tool.success", False)
-                    span.set_status(
-                        trace.status.Status(trace.status.StatusCode.ERROR, str(e))
-                    )
+                    span.set_status(trace.status.Status(trace.status.StatusCode.ERROR, str(e)))
                     raise
 
         Session._run_tool = traced_run_tool  # type: ignore
