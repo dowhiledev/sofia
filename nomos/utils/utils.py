@@ -89,6 +89,12 @@ def parse_type(type_str: str) -> type:
         "Tuple": Tuple,
         "Union": Union,
         "Literal": Literal,
+        "integer": int,
+        "string": str,
+        "boolean": bool,
+        "number": float,
+        "array": List,
+        "object": Dict,
     }
 
     def parse_expression(node) -> Any:  # noqa

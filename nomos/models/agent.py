@@ -126,6 +126,21 @@ class Step(BaseModel):
         """Get the hash of the step based on its ID."""
         return hash(self.step_id)
 
+    def __str__(self) -> str:
+        """Return a string representation of the step."""
+        return f"[Step] {self.step_id}: {self.description}"
+
+    @classmethod
+    def is_deferred_tool(cls, tool_identifier: str) -> bool:
+        """
+        Check if the tool identifier is a deferred tool. Tools of a deferred tool are fetch at runtime.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: True if the tool is a deferred tool, False otherwise.
+        """
+        parts = tool_identifier.strip("/").split("/")
+        return len(parts) == 2 and parts[0] == "@mcp"
+
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):
@@ -167,7 +182,16 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return self.available_tools
+        return list(filter(lambda t: not Step.is_deferred_tool(t), self.available_tools))
+
+    @property
+    def deferred_tool_ids(self) -> List[str]:
+        """
+        Get the list of available tool names that are deferred tools.
+
+        :return: List of tool names.
+        """
+        return list(filter(Step.is_deferred_tool, self.available_tools))
 
     def get_step_identifier(self) -> StepIdentifier:
         """
@@ -177,9 +201,21 @@ class Step(BaseModel):
         """
         return StepIdentifier(step_id=self.step_id)
 
-    def __str__(self) -> str:
-        """Return a string representation of the step."""
-        return f"[Step] {self.step_id}: {self.description}"
+    def extend_tools(self, tools: List[str]) -> None:
+        """
+        Extend the list of tools available in this step.
+
+        :param tools: List of tool names.
+        """
+        self.available_tools.extend(set(tools))
+
+    def reduce_tools(self, tools: List[str]) -> None:
+        """
+        Reduce the list of tools available in this step.
+
+        :param tools: List of tool names to remove.
+        """
+        self.available_tools = [tool for tool in self.available_tools if tool not in tools]
 
     def get_examples(
         self,

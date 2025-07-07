@@ -100,6 +100,33 @@ def basic_steps():
 
 
 @pytest.fixture
+def mcp_server_url():
+    """MCP Server URL"""
+    return "https://gitmcp.io/dowhiledev/nomos"
+
+
+@pytest.fixture
+def mcp_server_name():
+    """MCP Server name"""
+    return "mcp_server"
+
+
+@pytest.fixture
+def steps_with_diferred_tools(mcp_server_name):
+    """Fixture providing steps with a diferred tool."""
+    start_step = Step(
+        step_id="start",
+        description="Start step",
+        routes=[Route(target="end", condition="User is done")],
+        available_tools=[f"@mcp/{mcp_server_name}"],
+    )
+
+    end_step = Step(step_id="end", description="End step", routes=[], available_tools=[])
+
+    return [start_step, end_step]
+
+
+@pytest.fixture
 def test_tool_0():
     """Fixture providing a test tool function."""
 
@@ -128,6 +155,16 @@ def pkg_tool():
         tool_type="pkg",
         name="combinations",
         tool_identifier="itertools.combinations",
+    )
+
+
+@pytest.fixture
+def mcp_tool(mcp_server_url, mcp_server_name):
+    """Fixture providing a MCP tool wrapper."""
+    return ToolWrapper(
+        tool_type="mcp",
+        name=mcp_server_name,
+        tool_identifier=mcp_server_url,
     )
 
 
@@ -204,3 +241,16 @@ def example_agent(mock_llm, example_steps, test_tool_0, tool_defs):
         tools=ToolsConfig(tool_defs=tool_defs),
     )
     return Agent.from_config(config=config, llm=mock_llm, tools=[test_tool_0])
+
+
+@pytest.fixture
+def mcp_agent(mock_llm, steps_with_diferred_tools, mcp_tool):
+    """Agent instance with MCP tool."""
+    config = AgentConfig(
+        name="test_agent",
+        persona="Test persona",
+        steps=steps_with_diferred_tools,
+        start_step_id="start",
+        tools=ToolsConfig(tool_defs={}),
+    )
+    return Agent.from_config(config=config, llm=mock_llm, tools=[mcp_tool])

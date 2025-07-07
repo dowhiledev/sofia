@@ -44,14 +44,18 @@ class ExternalTool(BaseModel):
         :return: ToolWrapper instance.
         """
         tool_type, tool_name = self.tag.split("/", 1)
-        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
         tool_type = tool_type.replace("@", "")
+        if tool_type == "mcp" and not self.name:
+            raise ValueError("For MCP tools, the 'name' field is required.")
+
+        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
         assert tool_type in [
             "pkg",
             "crewai",
             "langchain",
+            "mcp",
         ], (
-            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', and 'langchain'."
+            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
         )
         return ToolWrapper(
             name=name,

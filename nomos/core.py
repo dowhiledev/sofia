@@ -3,7 +3,7 @@
 import os
 import pickle
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .config import AgentConfig
 from .llms import LLMBase
@@ -23,6 +23,7 @@ from .models.flow import Flow
 from .models.tool import (
     FallbackError,
     InvalidArgumentsError,
+    MCPServer,
     Tool,
     ToolWrapper,
     get_tools,
@@ -95,7 +96,9 @@ class Session:
         tool_defs = (
             self.config.tools.tool_defs if self.config and self.config.tools.tool_defs else None
         )
-        self.tools = get_tools(tools, tool_defs)
+        self.deferred_tools: Dict[str, Tool] = {}
+        self.tools: Dict[str, Tool] = get_tools(tools, tool_defs)
+
         # Compile state machine for fast transitions and flow lookups
         self.state_machine = StateMachine(
             self.steps,
@@ -151,6 +154,22 @@ class Session:
         )
         return state
 
+    def set_deferred_tools(self, tools: List[Tool]) -> None:
+        """
+        Set the list of deferred tools available in this session.
+
+        :param tools: List of Tool instances to set.
+        """
+        self.deferred_tools.update({tool.name: tool for tool in tools})
+
+    def reset_deferred_tools(self) -> None:
+        """
+        Reset the list of deferred tools available in this session.
+
+        This is useful to clear any previously fetched tools.
+        """
+        self.deferred_tools = {}
+
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
         Run a tool with the given name and arguments.
@@ -159,7 +178,7 @@ class Session:
         :param kwargs: Arguments to pass to the tool.
         :return: Result of the tool execution.
         """
-        tool = self.tools.get(tool_name)
+        tool = self.tools.get(tool_name) or self.deferred_tools.get(tool_name)
         if not tool:
             log_error(f"Tool '{tool_name}' not found in session tools.")
             raise ValueError(
@@ -169,19 +188,53 @@ class Session:
 
         return tool.run(**kwargs)
 
-    def _get_current_step_tools(self) -> tuple[Tool, ...]:
+    def _get_deferred_tools_for_step(self, step: Step) -> List[Tool]:
+        """
+        Get deferred tools for the given step.
+
+        :param step: The Step instance to populate deferred tools for.
+        :return: List of Tool instances that are deferred for this step.
+        """
+        if not step.deferred_tool_ids:
+            return []
+
+        deferred_tools: List[Tool] = []
+        deferred_tool_names = step.deferred_tool_ids
+        for deferred_tool_name in deferred_tool_names:
+            tool = self.tools.get(deferred_tool_name)
+            if not tool:
+                log_error(
+                    f"Deferred tool '{deferred_tool_name}' not found in session tools. Skipping."
+                )
+                continue
+
+            if isinstance(tool, MCPServer):
+                deferred_tools.extend(Tool.from_mcp_server(tool))
+
+        return deferred_tools
+
+    def _get_current_step_tools(self) -> Tuple[Tool, ...]:
         """
         Get the list of tools available in the current step.
 
         :return: List of Tool instances available in the current step.
         """
+        deferred_tools: List[Tool] = self._get_deferred_tools_for_step(self.current_step)
+        deferred_tool_names = [tool.name for tool in deferred_tools]
+        self.set_deferred_tools(deferred_tools)
+
+        log_debug(f"Adding deferred tools to step: {deferred_tool_names}")
+        self.current_step.extend_tools(deferred_tool_names)
         tools = []
         for tool in self.current_step.tool_ids:
-            _tool = self.tools.get(tool)
+            _tool = self.tools.get(tool) or self.deferred_tools.get(tool)
             if not _tool:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
+
             tools.append(_tool)
+
+        self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
     def _add_message(self, role: str, message: str) -> None:
@@ -288,6 +341,7 @@ class Session:
                     f"Maximum iterations reached ({self.max_iter}). Stopping session."
                 )
 
+        self.reset_deferred_tools()
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
@@ -559,7 +613,7 @@ class Agent:
         for step in self.steps.values():
             for step_tool in step.available_tools:
                 for tool in self.tools:
-                    if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
+                    if (isinstance(tool, ToolWrapper) and tool.id == step_tool) or (
                         callable(tool) and getattr(tool, "__name__", None) == step_tool
                     ):
                         break

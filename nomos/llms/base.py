@@ -248,8 +248,10 @@ class LLMBase:
             current_step_tools = tuple(
                 tool for tool in current_step_tools if tool.name == constraints.tool_name
             )
-        tool_ids = [tool.name for tool in current_step_tools]
-        tool_models = [tool.get_args_model() for tool in current_step_tools]
+        # Sort tools by name to ensure deterministic schema generation
+        sorted_tools = sorted(current_step_tools, key=lambda t: t.name)
+        tool_ids = [tool.name for tool in sorted_tools]
+        tool_models = [tool.get_args_model() for tool in sorted_tools]
 
         if constraints and constraints.actions:
             action_ids = constraints.actions
