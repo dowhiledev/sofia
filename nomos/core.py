@@ -781,5 +781,26 @@ class Agent:
         res.state = session.get_state()
         return res
 
+    def display(self, save_path: Optional[str] = None, is_notebook: bool = True) -> None:
+        """
+        Visualize the agent's steps and flows.
+
+        :param save_path: Optional path to save the visualization.
+        :param is_notebook: Whether the current environment is a Jupyter notebook.
+        """
+        from .utils.utils import create_mermaid_graph, mermaid_svg
+
+        if not is_notebook and not save_path:
+            raise ValueError("save_path must be provided if not in a notebook environment.")
+
+        mm_code = create_mermaid_graph(
+            steps=self.steps, flows=self.flows if self.flows else [], tools=get_tools(self.tools)
+        )
+        mermaid_svg(
+            mm_code,
+            save_to=os.path.join(save_path, f"{self.name}_graph.svg") if save_path else None,
+            display=is_notebook,
+        )
+
 
 __all__ = ["Session", "Agent"]
