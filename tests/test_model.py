@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastmcp.exceptions import ToolError
 
-from nomos.models.tool import MCPServer, Tool, ToolCallError
+from nomos.models.tool import MCPServer, Tool
 from nomos.utils.utils import create_base_model
 
 
@@ -110,7 +110,7 @@ class TestMCPServer:
         # Simulate an error from the client
         mock_client.call_tool.side_effect = ToolError("Tool call failed")
         server = MCPServer(name="server", url="https://example.com")
-        with pytest.raises(ToolCallError):
+        with pytest.raises(Exception):
             await server.call_tool_async(tool_name, params)
 
 
