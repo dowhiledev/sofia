@@ -33,6 +33,10 @@ LLM_CHOICES = {
         "provider": "ollama",
         "model": "llama3",
     },
+    "Anthropic": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+    },
     "HuggingFace": {
         "provider": "huggingface",
         "model": "",
