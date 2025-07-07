@@ -5,10 +5,10 @@ from typing import List, Optional, Union
 
 from nomos.models.agent import Message, Step, Summary
 
-from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase
 from ..utils.logging import log_debug
+from .base import Memory
 
 
 class PeriodicalSummarizationMemory(Memory):
@@ -91,9 +91,7 @@ class PeriodicalSummarizationMemory(Memory):
         )
         context_cpy = self.context[summary_i:]
         N = len(context_cpy)
-        total_context = " ".join(
-            [str(item) for item in context_cpy if not isinstance(item, Step)]
-        )
+        total_context = " ".join([str(item) for item in context_cpy if not isinstance(item, Step)])
         T: int = self.token_counter(total_context)
 
         log_debug(
@@ -127,9 +125,7 @@ class PeriodicalSummarizationMemory(Memory):
         recent_indices = {i for i in range(N - self.M + 1, N + 1)}
         raw_indices |= recent_indices
 
-        summarize_items = [
-            context_cpy[i - 1] for i, s in scores if i not in raw_indices
-        ]
+        summarize_items = [context_cpy[i - 1] for i, s in scores if i not in raw_indices]
 
         # Generate summary
         summary = self.generate_summary(summarize_items)

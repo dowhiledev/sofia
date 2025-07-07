@@ -7,13 +7,12 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
+import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
-
-import typer
 
 from . import __version__
 from .config import AgentConfig, LoggingConfig, LoggingHandler
@@ -30,7 +29,6 @@ from .llms import LLMConfig
 from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
-
 
 console = Console()
 app = typer.Typer(
@@ -75,7 +73,7 @@ Build Agents you can audit.
 def print_banner() -> None:
     """Print the Nomos banner."""
     banner = Panel(
-        Text.from_markup(banner_text, justify="center"),
+        Text.from_markup(banner_text.strip(), justify="center"),
         border_style=PRIMARY_COLOR,
         title_align="left",
         padding=(1, 2),
@@ -143,9 +141,7 @@ def init(
         if not Confirm.ask(
             f"Directory [bold]{target_dir}[/bold] already exists and is not empty. Continue?"
         ):
-            console.print(
-                "[red]ERROR:[/red] Project initialization cancelled.", style=ERROR_COLOR
-            )
+            console.print("[red]ERROR:[/red] Project initialization cancelled.", style=ERROR_COLOR)
             raise typer.Exit(1)
 
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -229,7 +225,10 @@ def init(
         )
         try:
             generated_config = _handle_config_generation(
-                usecase=usecase, provider=_provider, model=_model, tools=tools  # type: ignore
+                usecase=usecase,
+                provider=_provider,
+                model=_model,
+                tools=tools,  # type: ignore
             )
             steps = generated_config.to_agent_steps()
             name = generated_config.name
@@ -290,9 +289,7 @@ def run(
         "-t",
         help="Python files containing tool definitions (can be used multiple times)",
     ),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable verbose logging"
-    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging"),
 ) -> None:
     """Run the Nomos agent in development mode."""
     print_banner()
@@ -322,13 +319,9 @@ def run(
     try:
         _run(config_path, tool_paths, verbose)
     except KeyboardInterrupt:
-        console.print(
-            "\n[yellow]Development Run stopped.[/yellow]", style=WARNING_COLOR
-        )
+        console.print("\n[yellow]Development Run stopped.[/yellow]", style=WARNING_COLOR)
     except Exception as e:
-        console.print(
-            f"[red]ERROR:[/red] Error running development Run: {e}", style=ERROR_COLOR
-        )
+        console.print(f"[red]ERROR:[/red] Error running development Run: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -373,9 +366,7 @@ def train(
     except KeyboardInterrupt:
         console.print("\n[yellow]Training stopped.[/yellow]", style=WARNING_COLOR)
     except Exception as e:
-        console.print(
-            f"[red]ERROR:[/red] Error during training: {e}", style=ERROR_COLOR
-        )
+        console.print(f"[red]ERROR:[/red] Error during training: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -390,9 +381,7 @@ def serve(
         "-t",
         help="Python files containing tool definitions (can be used multiple times)",
     ),
-    port: Optional[int] = typer.Option(
-        None, "--port", "-p", help="Port to bind the server"
-    ),
+    port: Optional[int] = typer.Option(None, "--port", "-p", help="Port to bind the server"),
     workers: Optional[int] = typer.Option(
         None, "--workers", "-w", help="Number of uvicorn workers"
     ),
@@ -426,6 +415,9 @@ def serve(
             f"[bold green]Starting server on port [bold]{port or 'config'}[/bold][/bold green]",
             title="Serve",
             border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
         )
     )
 
@@ -468,6 +460,9 @@ def test(
             "[bold cyan]Running Nomos agent tests[/bold cyan]",
             title="Testing Framework",
             border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
         )
     )
 
@@ -629,7 +624,7 @@ def _generate_project_files(
         "            if user_input.lower() in ['quit', 'exit', 'bye']:"
         "                print('Goodbye!')"
         "                break",
-        "            if not user_input:" "                continue",
+        "            if not user_input:                continue",
         "            res = session.next(user_input, verbose=True)",
         "            if hasattr(res.decision, 'response') and res.decision.response:",
         '                print(f"\nAgent {config.name}: {res.decision.response}")'
@@ -782,17 +777,13 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "    main()",
     ]
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".py", delete=False
-    ) as temp_script:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_script:
         temp_script_path = temp_script.name
         temp_script.write("\n".join(dev_server_code))
 
     try:
         console.print(f"[bold cyan]Working directory:[/bold cyan] {current_dir}")
-        result = subprocess.run(
-            [sys.executable, temp_script_path], cwd=current_dir, check=False
-        )
+        result = subprocess.run([sys.executable, temp_script_path], cwd=current_dir, check=False)
         if result.returncode not in (0, 130):
             console.print(
                 f"[red]ERROR:[/red] Development server exited with code {result.returncode}",
@@ -866,9 +857,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
             )
         elif res.decision.action == Action.END:
             console.print(
-                "Agent:\nReasoning:{}\nEnding session.".format(
-                    "\n".join(res.decision.reasoning)
-                ),
+                "Agent:\nReasoning:{}\nEnding session.".format("\n".join(res.decision.reasoning)),
                 style=PRIMARY_COLOR,
             )
             break
@@ -894,7 +883,9 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         context_summary = config.get_llm().generate_summary(
             flow_memory_context[:-1]
             if flow_memory_context and len(flow_memory_context) > 1
-            else res.state.history[:-1] if len(res.state.history) > 1 else []
+            else res.state.history[:-1]
+            if len(res.state.history) > 1
+            else []
         )
 
         for step in config.steps:
@@ -902,9 +893,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
                 if step.examples is None:
                     step.examples = []
                 step.examples.append(
-                    DecisionExample(
-                        context=" ".join(context_summary.summary), decision=feedback
-                    )
+                    DecisionExample(context=" ".join(context_summary.summary), decision=feedback)
                 )
                 break
 

@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [0.3.0] - 2025-07-04
+
+### Added
+- Added the State Machine module to manage complex workflows and state transitions.
+- Interactive Training Module for agents, allowing users to train agents interactively with feedback.
+- Improved Memory module with Decision Model Caching for better performance and reduced latency.
+- Ability to add type definition to functions using the config.
+- Anthropic LLM provider support.
+- Better Type Validation for Decision Models.
+- Better Error Handling for Decision Models by Constraining the Fields according to the errors.
+
 ## [0.2.4] - 2025-06-18
 
 ### Added

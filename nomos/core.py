@@ -94,9 +94,7 @@ class Session:
         self.embedding_model = embedding_model
 
         tool_defs = (
-            self.config.tools.tool_defs
-            if self.config and self.config.tools.tool_defs
-            else None
+            self.config.tools.tool_defs if self.config and self.config.tools.tool_defs else None
         )
         self.deferred_tools: Dict[str, Tool] = {}
         self.tools: Dict[str, Tool] = get_tools(tools, tool_defs)
@@ -324,9 +322,7 @@ class Session:
         :return: A tuple containing the decision and any tool results.
         """
         if no_errors >= self.max_errors:
-            raise ValueError(
-                f"Maximum errors reached ({self.max_errors}). Stopping session."
-            )
+            raise ValueError(f"Maximum errors reached ({self.max_errors}). Stopping session.")
         if next_count >= self.max_iter:
             if not self.current_step.auto_flow:
                 self._add_message(
@@ -363,27 +359,19 @@ class Session:
 
         # Validate decision
         if decision.action == Action.RESPOND and decision.response is None:
-            self._add_message(
-                "error", "RESPOND action requires a response, but none was provided."
-            )
+            self._add_message("error", "RESPOND action requires a response, but none was provided.")
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
-                decision_constraints=DecisionConstraints(
-                    actions=["RESPOND"], fields=["response"]
-                ),
+                decision_constraints=DecisionConstraints(actions=["RESPOND"], fields=["response"]),
                 verbose=verbose,
             )
         if decision.action == Action.MOVE and decision.step_id is None:
-            self._add_message(
-                "error", "MOVE action requires a step_id, but none was provided."
-            )
+            self._add_message("error", "MOVE action requires a step_id, but none was provided.")
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
-                decision_constraints=DecisionConstraints(
-                    actions=["MOVE"], fields=["step_id"]
-                ),
+                decision_constraints=DecisionConstraints(actions=["MOVE"], fields=["step_id"]),
                 verbose=verbose,
             )
         if decision.action == Action.TOOL_CALL and decision.tool_call is None:
@@ -420,9 +408,7 @@ class Session:
                         f"Tool {tool_name} executed successfully with args {tool_kwargs}.\nResults: {tool_results}",
                     )
                 except Exception as e:
-                    self._add_message(
-                        "tool", f"Running tool {tool_name} with args {tool_kwargs}"
-                    )
+                    self._add_message("tool", f"Running tool {tool_name} with args {tool_kwargs}")
                     raise e
                 log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
@@ -449,11 +435,7 @@ class Session:
                         fields=["tool_call"],
                         tool_name=decision.tool_call.tool_name,
                     )
-                    if (
-                        _error
-                        and isinstance(_error, InvalidArgumentsError)
-                        and decision.tool_call
-                    )
+                    if (_error and isinstance(_error, InvalidArgumentsError) and decision.tool_call)
                     else None
                 ),
                 verbose=verbose,
@@ -469,25 +451,19 @@ class Session:
                         self.state_machine.current_step_id
                     )
                     if self.state_machine.current_flow.flow_id in exits:
-                        self.state_machine._exit_flow(
-                            self.state_machine.current_step_id
-                        )
+                        self.state_machine._exit_flow(self.state_machine.current_step_id)
 
                 self.state_machine.move(decision.step_id)
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
             else:
-                allowed = self.state_machine.transitions.get(
-                    self.state_machine.current_step_id, []
-                )
+                allowed = self.state_machine.transitions.get(self.state_machine.current_step_id, [])
                 self._add_message(
                     "error",
                     f"Invalid route: {decision.step_id} not in {allowed}",
                 )
-                _error = ValueError(
-                    f"Invalid route: {decision.step_id} not in {allowed}"
-                )
+                _error = ValueError(f"Invalid route: {decision.step_id} not in {allowed}")
             res = Response(decision=decision)
             if verbose:
                 pp_response(res)
@@ -500,9 +476,7 @@ class Session:
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
                 decision_constraints=(
-                    DecisionConstraints(actions=["MOVE"], fields=["step_id"])
-                    if _error
-                    else None
+                    DecisionConstraints(actions=["MOVE"], fields=["step_id"]) if _error else None
                 ),
                 verbose=verbose,
             )
@@ -510,9 +484,7 @@ class Session:
             # Clean up any active flows before ending
             if self.state_machine.current_flow and self.state_machine.flow_context:
                 try:
-                    self.state_machine.current_flow.cleanup(
-                        self.state_machine.flow_context
-                    )
+                    self.state_machine.current_flow.cleanup(self.state_machine.flow_context)
                     log_debug(
                         f"Cleaned up flow '{self.state_machine.current_flow.flow_id}' on session end"
                     )
@@ -604,9 +576,7 @@ class Agent:
         self.max_iter = max_iter
         self.config = config
         self.embedding_model = (
-            embedding_model
-            or (config.get_embedding_model() if config else None)
-            or self.llm
+            embedding_model or (config.get_embedding_model() if config else None) or self.llm
         )
         self._setup_logging()
         self.flows = flows or (
@@ -620,9 +590,7 @@ class Agent:
         self.tools = []
         for tool in tools or []:
             tool_id = (
-                tool.name
-                if isinstance(tool, ToolWrapper)
-                else getattr(tool, "__name__", None)
+                tool.name if isinstance(tool, ToolWrapper) else getattr(tool, "__name__", None)
             )
             tool_id = tool_id or id(tool)  # Fallback to id if no name
             if tool_id not in seen:
@@ -652,9 +620,7 @@ class Agent:
                     ):
                         break
                 else:
-                    log_error(
-                        f"Tool {step_tool} not found in tools for step {step.step_id}"
-                    )
+                    log_error(f"Tool {step_tool} not found in tools for step {step.step_id}")
                     raise ValueError(
                         f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
                     )
@@ -662,9 +628,7 @@ class Agent:
         # Go through all the steps and if there are examples in them, perform batch embedding
         for step in self.steps.values():
             if step.examples:
-                log_debug(
-                    f"Step {step.step_id} has examples, performing batch embedding"
-                )
+                log_debug(f"Step {step.step_id} has examples, performing batch embedding")
                 step.batch_embed_examples(embedding_model=self.embedding_model)
 
     @classmethod
@@ -684,9 +648,7 @@ class Agent:
         """
         if not llm:
             if not config.llm:
-                raise ValueError(
-                    "No LLM provided. Please provide an LLM or a config with an LLM."
-                )
+                raise ValueError("No LLM provided. Please provide an LLM or a config with an LLM.")
             llm = config.llm.get_llm()
         tools = tools or []
         tools.extend(config.tools.get_tools())
@@ -709,13 +671,9 @@ class Agent:
         # temporary fix until config is made available to other parts.
         if self.config and self.config.logging:
             logging_config = self.config.logging
-            os.environ.setdefault(
-                "NOMOS_ENABLE_LOGGING", str(logging_config.enable).lower()
-            )
+            os.environ.setdefault("NOMOS_ENABLE_LOGGING", str(logging_config.enable).lower())
             if logging_config.handlers:
-                os.environ.setdefault(
-                    "NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper()
-                )
+                os.environ.setdefault("NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper())
 
     def create_session(self, memory: Optional[Memory] = None) -> Session:
         """
@@ -727,9 +685,7 @@ class Agent:
         log_debug("Creating new session")
         if not memory:
             memory = (
-                self.config.memory.get_memory()
-                if self.config and self.config.memory
-                else Memory()
+                self.config.memory.get_memory() if self.config and self.config.memory else Memory()
             )
         return Session(
             name=self.name,
@@ -767,11 +723,7 @@ class Agent:
         """
         log_debug(f"Creating session from state: {state}")
 
-        memory = (
-            self.config.memory.get_memory()
-            if self.config and self.config.memory
-            else Memory()
-        )
+        memory = self.config.memory.get_memory() if self.config and self.config.memory else Memory()
 
         session = Session(
             name=self.name,

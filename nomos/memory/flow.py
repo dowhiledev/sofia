@@ -5,12 +5,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-
-from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase, LLMConfig
 from ..models.agent import Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
+from .base import Memory
 
 
 class Retriver:
@@ -34,7 +33,6 @@ class Retriver:
 
 
 class BM25Retriever(Retriver):
-
     def __init__(self, **kwargs) -> None:
         """Initialize BM25 retriever."""
         import bm25s
@@ -128,9 +126,7 @@ class FlowMemory(Memory):
         self.retriever = retriever.get_retriever(self.llm)
         self.context = []
 
-    def _enter(
-        self, previous_context: Optional[List[Union[Message, Summary]]] = None
-    ) -> None:
+    def _enter(self, previous_context: Optional[List[Union[Message, Summary]]] = None) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
             summary = self._generate_summary(previous_context)

@@ -17,10 +17,10 @@ sess = barista.create_session()
 
 user_input = None
 while True:
-    decision, _ = sess.next(user_input)
-    if decision.action == Action.RESPOND:
-        user_input = input(f"Assistant: {decision.response}\nYou: ")
-    elif decision.action.value == Action.END.value:
+    res = sess.next(user_input)
+    if res.decision.action == Action.RESPOND:
+        user_input = input(f"Assistant: {res.decision.response}\nYou: ")
+    elif res.decision.action == Action.END:
         print("Session ended.")
         break
     else:

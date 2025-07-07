@@ -1,4 +1,3 @@
-import pytest
 from enum import Enum
 
 from nomos.utils.misc import join_urls

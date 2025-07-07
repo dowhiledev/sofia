@@ -5,8 +5,8 @@ from unittest.mock import patch
 from nomos.utils.generator import (
     AgentConfiguration,
     AgentGenerator,
-    Step,
     Route,
+    Step,
 )
 
 
@@ -26,11 +26,7 @@ def test_agent_generator_generate(monkeypatch, mock_llm):
     config = AgentConfiguration(
         name="demo",
         persona="p",
-        steps=[
-            Step(
-                step_id="s", description="d", routes=[Route(target="s", condition="c")]
-            )
-        ],
+        steps=[Step(step_id="s", description="d", routes=[Route(target="s", condition="c")])],
         start_step_id="s",
     )
     mock_llm.set_response(config)

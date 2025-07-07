@@ -168,8 +168,8 @@ def test_greeting(agent):
             StepIdentifier(step_id="start"),
         ]
     )
-    decision, _, _ = agent.next("Hello", context.model_dump(mode="json"))
-    smart_assert(decision, "Agent should greet the user", agent.llm)
+    res = agent.next("Hello", context.model_dump(mode="json"))
+    smart_assert(res.decision, "Agent should greet the user", agent.llm)
 ```
 
 ### Scenario Testing

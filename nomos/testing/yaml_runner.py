@@ -35,7 +35,7 @@ def _create_test_file(yaml_path: Path) -> Path:
         "            with pytest.raises(AssertionError):",
         "                smart_assert(res.decision, tc.expectation, agent.llm)",
         "        else:",
-        "            smart_assert(decision, tc.expectation, agent.llm)",
+        "            smart_assert(res.decision, tc.expectation, agent.llm)",
         "    globals()[f'test_{name}'] = _test",
         "",
         "# E2E tests",

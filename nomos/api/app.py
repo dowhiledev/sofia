@@ -12,13 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-
 from nomos.api.agent import agent
 from nomos.api.db import init_db
 from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
 from nomos.api.session_store import SessionStore, create_session_store
 from nomos.api.yaml_to_mermaid import generate_config_json, parse_yaml_config
-from nomos.models.agent import Message as FlowMessage, StepIdentifier, Summary
+from nomos.models.agent import Message as FlowMessage
+from nomos.models.agent import StepIdentifier, Summary
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")
@@ -100,9 +100,7 @@ async def send_message(session_id: str, message: Message) -> SessionResponse:
 
     res = session.next(message.content)
     await session_store.set(session_id, session)
-    return SessionResponse(
-        session_id=session_id, message=res.decision.model_dump(mode="json")
-    )
+    return SessionResponse(session_id=session_id, message=res.decision.model_dump(mode="json"))
 
 
 @app.delete("/session/{session_id}")
@@ -127,9 +125,7 @@ async def get_session_history(session_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: List[Union[FlowMessage, StepIdentifier, Summary]] = (
-        session.memory.get_history()
-    )
+    history: List[Union[FlowMessage, StepIdentifier, Summary]] = session.memory.get_history()
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
@@ -226,13 +222,9 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
 @app.get("/config", response_class=JSONResponse)
 async def get_agent_config() -> JSONResponse:
     """Get the agent configuration as JSON with enhanced metadata."""
-    config_path = pathlib.Path(
-        os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml"))
-    )
+    config_path = pathlib.Path(os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml")))
     if not config_path.exists():
-        raise HTTPException(
-            status_code=404, detail="Agent configuration file not found"
-        )
+        raise HTTPException(status_code=404, detail="Agent configuration file not found")
 
     try:
         # Parse the YAML configuration
@@ -245,13 +237,12 @@ async def get_agent_config() -> JSONResponse:
 
         return JSONResponse(content=config_json)
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error processing configuration: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error processing configuration: {str(e)}")
 
 
 if __name__ == "__main__":
     import sys
+
     import uvicorn
 
     reload = "--reload" in sys.argv

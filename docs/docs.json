@@ -30,7 +30,7 @@
     "primary": {
       "type": "button",
       "label": "Playground",
-      "href": "https://nomos.dowhile.dev/playground"
+      "href": "https://nomos-builder.vercel.app/"
     }
   },
   "navigation": {
@@ -43,7 +43,7 @@
           {
             "group": "Getting Started",
             "pages": [
-              "index",
+              "intro",
               "getting-started"
             ]
           },
@@ -51,7 +51,8 @@
             "group": "Why NOMOS?",
             "pages": [
               "nomos/philosophy",
-              "nomos/vs-other-frameworks"
+              "nomos/vs-other-frameworks",
+              "nomos/architecture"
             ]
           },
           {
@@ -122,6 +123,13 @@
               "community/support/privacy-policy",
               "community/support/terms-of-service"
             ]
+          },
+          {
+            "group": "Roadmap",
+            "icon": "map-pin",
+            "pages": [
+              "kosmos"
+            ]
           }
         ]
       }
@@ -139,7 +147,7 @@
         "items": [
           {
             "label": "Playground",
-            "href": "https://nomos.dowhile.dev/playground"
+            "href": "https://nomos-builder.vercel.app/"
           },
           {
             "label": "Cookbook",
@@ -198,5 +206,11 @@
       "chatgpt",
       "claude"
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/intro"
+    }
+  ]
 }

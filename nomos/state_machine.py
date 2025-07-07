@@ -83,9 +83,7 @@ class StateMachine:
     def move(self, target: str) -> str:
         """Move to the target step if allowed and return new step id."""
         if not self.can_transition(self.current_step_id, target):
-            raise ValueError(
-                f"Invalid transition from {self.current_step_id} to {target}"
-            )
+            raise ValueError(f"Invalid transition from {self.current_step_id} to {target}")
         self.current_step_id = target
         return target
 
@@ -108,9 +106,7 @@ class StateMachine:
         """Enter a flow at the specified step."""
         try:
             recent_history = (
-                self.memory.get_history()[-10:]
-                if self.memory and self.memory.get_history()
-                else []
+                self.memory.get_history()[-10:] if self.memory and self.memory.get_history() else []
             )
             previous_context = [
                 msg for msg in recent_history if isinstance(msg, (Message, Summary))
@@ -140,9 +136,7 @@ class StateMachine:
             self.current_flow = None
             self.flow_context = None
 
-    def handle_flow_transitions(
-        self, step_id: str, session_id: str, verbose: bool = False
-    ) -> None:
+    def handle_flow_transitions(self, step_id: str, session_id: str, verbose: bool = False) -> None:
         """Enter or exit flows based on current step."""
         if not self.flow_manager:
             return
@@ -155,11 +149,7 @@ class StateMachine:
             if verbose:
                 self.pp_flow_transitions("enter", step_id, flow_to_enter.flow_id)
 
-        if (
-            self.current_flow
-            and self.flow_context
-            and self.current_flow.flow_id in exits
-        ):
+        if self.current_flow and self.flow_context and self.current_flow.flow_id in exits:
             self._exit_flow(step_id)
             if verbose:
                 self.pp_flow_transitions("exit", step_id, self.current_flow.flow_id)
@@ -184,9 +174,7 @@ class StateMachine:
         if self.current_flow and self.flow_context:
             flow_memory = self.current_flow.get_memory()
             flow_memory_context = (
-                flow_memory.memory.context
-                if isinstance(flow_memory, FlowMemoryComponent)
-                else []
+                flow_memory.memory.context if isinstance(flow_memory, FlowMemoryComponent) else []
             )
             return FlowState(
                 flow_id=self.current_flow.flow_id,

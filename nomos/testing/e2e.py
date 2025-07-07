@@ -6,10 +6,10 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Tuple
 
+from pydantic import BaseModel, Field
+
 from nomos.core import Agent
 from nomos.models.agent import Message, State
-
-from pydantic import BaseModel, Field
 
 
 class SimulationDecision(Enum):  # noqa
@@ -18,9 +18,7 @@ class SimulationDecision(Enum):  # noqa
 
 
 class NextInput(BaseModel):  # noqa
-    reasoning: List[str] = Field(
-        ..., description="Reason Step by step on deciding what to do next"
-    )
+    reasoning: List[str] = Field(..., description="Reason Step by step on deciding what to do next")
     decision: SimulationDecision = Field(
         ..., description="What to do next, either continue the conversation or assert"
     )

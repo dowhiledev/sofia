@@ -25,7 +25,7 @@
 pip install nomos[cli]
 ```
 
-To learn more about NOMOS, check out [the documentation](docs/md/). If you're looking for quick prototyping, try our [Playground](https://nomos.dowhile.dev/playground) for drag-and-drop agent creation.
+To learn more about NOMOS, check out [the documentation](docs/md/). If you're looking for quick prototyping, try our [Playground](https://nomos-builder.vercel.app/) for drag-and-drop agent creation.
 
 <details>
 <summary>Table of Contents</summary>
@@ -36,7 +36,7 @@ To learn more about NOMOS, check out [the documentation](docs/md/). If you're lo
 - [Documentation](#documentation)
 - [Additional Resources](#additional-resources)
 
-**[Complete Documentation](docs/md/) | [Try Playground](https://nomos.dowhile.dev/playground) | [Quick Start Guide](docs/md/getting-started.md)**
+**[Complete Documentation](docs/md/) | [Try Playground](https://nomos-builder.vercel.app/) | [Quick Start Guide](docs/md/getting-started.md)**
 
 </details>
 
@@ -56,7 +56,7 @@ Use NOMOS for:
 
 While NOMOS can be used standalone, it integrates with a growing ecosystem of tools and services designed for agent development:
 
-- **[Playground](https://nomos.dowhile.dev/playground)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
+- **[Playground](https://nomos-builder.vercel.app/)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
 - **[TypeScript SDK](support/ts-sdk/README.md)** - Full-featured client library for web and Node.js applications, enabling seamless integration of NOMOS agents into your frontend applications.
 - **[Docker Base Images](docs/md/deployment.md#docker-base-image)** - Pre-configured containers for rapid deployment with built-in support for Redis, PostgreSQL, and monitoring integrations.
 - **[CLI Tools](docs/md/cli-usage.md)** - Comprehensive command-line interface for agent development, testing, and deployment with `nomos init`, `nomos run`, `nomos train`, `nomos serve`, `nomos test`, `nomos schema`, and `nomos --version` commands.
@@ -69,7 +69,7 @@ While NOMOS can be used standalone, it integrates with a growing ecosystem of to
 | | Advanced Flow Management | Organize steps into flows with shared context and components |
 | | Flow Memory | Each flow maintains context with intelligent cross-flow summarization |
 | **Development** | Multiple Config Options | Python API or declarative YAML configuration |
-| | Playground | Drag-and-drop interface for designing flows **[Try it live →](https://nomos.dowhile.dev/playground)** |
+| | Playground | Drag-and-drop interface for designing flows **[Try it live →](https://nomos-builder.vercel.app/)** |
 | | Interactive CLI | Bootstrap agents with `nomos init`, run with `nomos run` |
 | **Tools & Integration** | Tool Integration | Register Python functions, packages, CrewAI, or LangChain tools |
 | | Auto Documentation | Tool descriptions generated from docstrings |

@@ -6,9 +6,7 @@ import os
 from typing import Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
-
 from pydantic_settings import BaseSettings
-
 
 from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
@@ -56,7 +54,9 @@ class ExternalTool(BaseModel):
             "crewai",
             "langchain",
             "mcp",
-        ], f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
+        ], (
+            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
+        )
         return ToolWrapper(
             name=name,
             tool_type=tool_type,
@@ -86,14 +86,10 @@ class ToolsConfig(BaseModel):
                 if tool_file.endswith(".py"):
                     # It's a file path
                     if not os.path.exists(tool_file):
-                        raise FileNotFoundError(
-                            f"Tool file '{tool_file}' does not exist."
-                        )
+                        raise FileNotFoundError(f"Tool file '{tool_file}' does not exist.")
 
                     # Load module from file path
-                    spec = importlib.util.spec_from_file_location(
-                        "tool_module", tool_file
-                    )
+                    spec = importlib.util.spec_from_file_location("tool_module", tool_file)
                     if spec is None or spec.loader is None:
                         raise ImportError(f"Could not load module from '{tool_file}'")
                     module = importlib.util.module_from_spec(spec)
@@ -115,9 +111,7 @@ class ToolsConfig(BaseModel):
                 tool_wrapper = external_tool.get_tool_wrapper()
                 tools_list.append(tool_wrapper)
             except ValueError as e:
-                raise ValueError(
-                    f"Failed to load external tool '{external_tool.tag}': {e}"
-                )
+                raise ValueError(f"Failed to load external tool '{external_tool.tag}': {e}")
 
         return tools_list
 
@@ -169,9 +163,7 @@ class AgentConfig(BaseSettings):
     persona: Optional[str] = None  # Recommended to use a default persona
     steps: List[Step]
     start_step_id: str
-    system_message: Optional[str] = (
-        None  # Default system message will be used if not provided
-    )
+    system_message: Optional[str] = None  # Default system message will be used if not provided
     show_steps_desc: bool = False
     max_errors: int = 3
     max_iter: int = 10
@@ -179,9 +171,7 @@ class AgentConfig(BaseSettings):
     threshold: float = 0.5  # Minimum similarity score to include an example
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
-    embedding_model: Optional[LLMConfig] = (
-        None  # Optional embedding model configuration
-    )
+    embedding_model: Optional[LLMConfig] = None  # Optional embedding model configuration
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
@@ -205,11 +195,7 @@ class AgentConfig(BaseSettings):
         server_data = data.get("server", {})
         if isinstance(server_data, dict):
             expanded = {
-                k: (
-                    os.getenv(v[1:], v)
-                    if isinstance(v, str) and v.startswith("$")
-                    else v
-                )
+                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
                 for k, v in server_data.items()
             }
             data["server"] = expanded
