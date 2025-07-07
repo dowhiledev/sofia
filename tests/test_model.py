@@ -1,11 +1,10 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastmcp.exceptions import ToolError
 
-from nomos.utils.utils import create_base_model
-
 from nomos.models.tool import MCPServer, Tool, ToolCallError
+from nomos.utils.utils import create_base_model
 
 
 @pytest.fixture
@@ -124,9 +123,7 @@ class TestTool:
         tool_name = "test_tool"
         tool_description = "A test tool"
         tool_params = {"properties": {}}
-        tool_mock = MagicMock(
-            name=tool_name, description=tool_description, parameters=tool_params
-        )
+        tool_mock = MagicMock(name=tool_name, description=tool_description, parameters=tool_params)
         tool_mock.name = tool_name
         mock_tools = [tool_mock]
         mock_get_tools.return_value = mock_tools

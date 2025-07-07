@@ -234,9 +234,7 @@ class Tool(BaseModel):
             tool = cls(
                 name=tool_name,
                 description=mcp_tool.description,
-                function=lambda name=mcp_tool.name, **kwargs: server.call_tool(
-                    name, kwargs
-                ),
+                function=lambda name=mcp_tool.name, **kwargs: server.call_tool(name, kwargs),
                 parameters=mcp_tool.parameters,
             )
             tools.append(tool)
@@ -498,9 +496,7 @@ class MCPServer(BaseModel):
 
         return tool_models
 
-    async def call_tool_async(
-        self, tool_name: str, kwargs: Optional[dict] = None
-    ) -> List[str]:
+    async def call_tool_async(self, tool_name: str, kwargs: Optional[dict] = None) -> List[str]:
         """
         Asynchronously call a tool on the MCP server.
 

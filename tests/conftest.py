@@ -121,9 +121,7 @@ def steps_with_diferred_tools(mcp_server_name):
         available_tools=[f"@mcp/{mcp_server_name}"],
     )
 
-    end_step = Step(
-        step_id="end", description="End step", routes=[], available_tools=[]
-    )
+    end_step = Step(step_id="end", description="End step", routes=[], available_tools=[])
 
     return [start_step, end_step]
 

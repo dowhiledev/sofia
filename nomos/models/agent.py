@@ -182,9 +182,7 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return list(
-            filter(lambda t: not Step.is_deferred_tool(t), self.available_tools)
-        )
+        return list(filter(lambda t: not Step.is_deferred_tool(t), self.available_tools))
 
     @property
     def deferred_tool_ids(self) -> List[str]:
@@ -217,9 +215,7 @@ class Step(BaseModel):
 
         :param tools: List of tool names to remove.
         """
-        self.available_tools = [
-            tool for tool in self.available_tools if tool not in tools
-        ]
+        self.available_tools = [tool for tool in self.available_tools if tool not in tools]
 
     def get_examples(
         self,

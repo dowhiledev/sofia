@@ -219,9 +219,7 @@ class Session:
 
         :return: List of Tool instances available in the current step.
         """
-        deferred_tools: List[Tool] = self._get_deferred_tools_for_step(
-            self.current_step
-        )
+        deferred_tools: List[Tool] = self._get_deferred_tools_for_step(self.current_step)
         deferred_tool_names = [tool.name for tool in deferred_tools]
         self.set_deferred_tools(deferred_tools)
 
