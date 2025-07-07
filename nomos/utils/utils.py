@@ -2,9 +2,14 @@
 
 import ast
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
+
+if TYPE_CHECKING:
+    from ..models.agent import Step
+    from ..models.flow import Flow
+    from ..models.tool import Tool
 
 
 def create_base_model(
@@ -117,6 +122,83 @@ def parse_type(type_str: str) -> type:
         return parse_expression(tree.body)
     except Exception as e:
         raise ValueError(f"Invalid type: {type_str}") from e
+
+
+def create_mermaid_graph(
+    steps: dict[str, "Step"], tools: dict[str, "Tool"], flows: list["Flow"]
+) -> str:
+    """Generate a Mermaid graph representation of the steps, tools, and flows."""
+    mermaid_graph = "graph TD\n"
+
+    # Track which steps belong to flows
+    flow_steps = set()
+
+    # Create subgroups for each flow
+    for flow in flows:
+        if flow.steps:  # Only create subgroup if flow has steps
+            mermaid_graph += f'\n    subgraph flow_{flow.flow_id}["{flow.flow_id}"]\n'
+
+            # Add steps within this flow as nodes
+            for step_id, step in flow.steps.items():
+                mermaid_graph += (
+                    f'        step_{step_id}["<b>{step_id}</b><br/>{step.description[:30]}"]\n'
+                )
+                flow_steps.add(step_id)
+
+            mermaid_graph += "    end\n"
+
+    # Add any remaining steps that don't belong to flows
+    for step_id, step in steps.items():
+        if step_id not in flow_steps:
+            mermaid_graph += f'step_{step_id}["<b>{step_id}</b><br/>{step.description[:30]}"]\n'
+
+    # Add routes between steps
+    for step_id, step in steps.items():
+        for route in step.routes:
+            mermaid_graph += f"step_{step_id} -->|{route.condition}| step_{route.target}\n"
+
+    # Add tools as nodes with different styling
+    for tool_name, tool in tools.items():
+        mermaid_graph += f'tool_{tool_name}["<b>{tool_name}</b><br/>{tool.description[:25]}"]\n'
+
+    # Style the tool nodes with different color
+    mermaid_graph += "\n    %% Tool styling\n"
+    for tool_name in tools.keys():
+        mermaid_graph += f"    tool_{tool_name}:::toolStyle\n"
+
+    mermaid_graph += (
+        "    classDef toolStyle fill:#e8f4fd,stroke:#1e88e5,stroke-width:2px,color:#000\n"
+    )
+
+    # Add connections from steps to their available tools
+    for step_id, step in steps.items():
+        if step.available_tools:
+            for tool_name in step.available_tools:
+                if tool_name in tools:
+                    mermaid_graph += f"step_{step_id} -->|uses| tool_{tool_name}\n"
+
+    return mermaid_graph
+
+
+def mermaid_svg(graph: str, save_to: Optional[str] = None, display: bool = True):
+    """Generate and optionally display a Mermaid graph as SVG."""
+    import base64
+    from urllib.request import Request, urlopen
+
+    graphbytes = graph.encode()
+    base64_bytes = base64.b64encode(graphbytes)
+    base64_string = base64_bytes.decode()
+    url = "https://mermaid.ink/svg/" + base64_string
+    req = Request(url, headers={"User-Agent": "IPython/Notebook"})
+    svg = urlopen(req).read().decode()
+
+    if save_to:
+        with open(save_to, "w") as f:
+            f.write(svg)
+    if display:
+        from IPython.display import display_svg
+
+        display_svg(svg, raw=True)
 
 
 __all__ = [
