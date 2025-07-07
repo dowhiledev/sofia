@@ -278,9 +278,8 @@ class Tool(BaseModel):
 class MCPTool(Tool):
     type: str = "mcp"
     server: "MCPServer"
-    description = ""
+    description: str = ""
     function = lambda **kwargs: kwargs.get("name", "Unknown MCP Tool")
-    parameters = {}
 
     @property
     def tools(self) -> List["Tool"]:
@@ -299,14 +298,11 @@ class MCPTool(Tool):
             assert name and isinstance(name, str), (
                 f"Tool name must be a non-empty string, got: {name}"
             )
-            assert params and isinstance(params, dict), (
-                f"Tool parameters must be a dictionary, got: {params}"
-            )
             if not description:
                 description = f"Tool {name} on MCP server {self.server.name}"
             tools.append(
                 Tool(
-                    name=f"{self.name}/{name}",
+                    name=name,
                     description=description,
                     function=lambda name=name, **kwargs: self.server.call_tool(name, kwargs),
                     parameters=params,

@@ -138,8 +138,9 @@ class Step(BaseModel):
         :param tool_identifier: The identifier of the tool.
         :return: True if the tool is a deferred tool, False otherwise.
         """
-        parts = tool_identifier.strip("/").split("/")
-        return len(parts) == 2 and parts[0] == "@mcp"
+        if tool_identifier.startswith("@mcp"):
+            return True
+        return False
 
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""

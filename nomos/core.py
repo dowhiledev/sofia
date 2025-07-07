@@ -23,7 +23,7 @@ from .models.flow import Flow
 from .models.tool import (
     FallbackError,
     InvalidArgumentsError,
-    MCPServer,
+    MCPTool,
     Tool,
     ToolWrapper,
     get_tools,
@@ -208,8 +208,8 @@ class Session:
                 )
                 continue
 
-            if isinstance(tool, MCPServer):
-                deferred_tools.extend(Tool.from_mcp_server(tool))
+            if isinstance(tool, MCPTool):
+                deferred_tools.extend(tool.tools)
 
         return deferred_tools
 
