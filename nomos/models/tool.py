@@ -19,7 +19,7 @@ from typing import (
 from docstring_parser import parse
 from fastmcp import Client
 from fastmcp.exceptions import ToolError
-from pydantic import BaseModel, HttpUrl, ValidationError
+from pydantic import BaseModel, HttpUrl, SecretStr, ValidationError
 
 from ..models.mcp import MCPServerTransport
 from ..utils.misc import join_urls
@@ -396,6 +396,7 @@ class ToolWrapper(BaseModel):
                 name=self.id,
                 url=self.tool_identifier,
                 path=self.kwargs.get("path") if self.kwargs else None,
+                auth=self.kwargs.get("auth") if self.kwargs else None,
             )
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
@@ -413,6 +414,7 @@ class MCPServer(BaseModel):
     url: HttpUrl
     path: Optional[str] = None
     transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
+    auth: Optional[SecretStr] = None
 
     @property
     def id(self) -> str:
@@ -459,7 +461,7 @@ class MCPServer(BaseModel):
 
         :return: A list of Tool instances.
         """
-        client = Client(self.url_path)
+        client = Client(self.url_path, auth=self.auth.get_secret_value() if self.auth else None)
         tool_models = []
         async with client:
             tools = await client.list_tools()
@@ -500,11 +502,11 @@ class MCPServer(BaseModel):
         """
         Asynchronously call a tool on the MCP server.
 
-        :param tool_name: Toll name to call.
+        :param tool_name: Tool name to call.
         :param kwargs: Optional keyword arguments for the tool.
         :return: A list of strings representing the tool's output.
         """
-        client = Client(self.url_path)
+        client = Client(self.url_path, auth=self.auth.get_secret_value() if self.auth else None)
         params = kwargs.copy() if kwargs else {}
         async with client:
             try:
