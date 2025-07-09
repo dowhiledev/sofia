@@ -211,7 +211,7 @@ class AgentConfig(BaseSettings):
         import yaml
 
         with open(file_path, "w") as file:
-            yaml.dump(self.model_dump(mode="json"), file)
+            yaml.dump(self.model_dump(mode="json"), file, sort_keys=False)
 
     def get_llm(self) -> LLMBase:
         """
