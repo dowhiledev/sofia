@@ -3,7 +3,7 @@
 import math
 from typing import List, Optional, Union
 
-from nomos.models.agent import Message, Step, Summary
+from nomos.models.agent import Event, Message, Step, Summary
 
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase
@@ -61,8 +61,8 @@ class PeriodicalSummarizationMemory(Memory):
         """Count tokens using the underlying LLM's tokenizer."""
         return self.llm.token_counter(text)
 
-    def generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
-        """Generate a summary from a list of items."""
+    def generate_summary(self, items: List[Union[Event, Summary]]) -> Summary:
+        """Generate a summary from a list of events or summaries."""
         log_debug(f"Generating summary from {len(items)} items.")
         items_str = "\n".join([str(item) for item in items])
         summary = self.llm.get_output(
@@ -112,8 +112,8 @@ class PeriodicalSummarizationMemory(Memory):
             # Type-based weight
             if isinstance(item, Summary):
                 w_type = self.weights.get("summary", 0.5)
-            elif isinstance(item, Message):
-                w_type = self.weights.get(item.role, 1.0)
+            elif isinstance(item, Event):
+                w_type = self.weights.get(item.type, 1.0)
             else:
                 w_type = 0.0
 
@@ -134,7 +134,7 @@ class PeriodicalSummarizationMemory(Memory):
         self.context += [summary] + self.context[-self.M :]
         log_debug(f"Updated context length: {len(self.context)}")
 
-    def get_history(self) -> List[Union[Message, Summary, Step]]:
+    def get_history(self) -> List[Union[Event, Summary, Step]]:
         """Get the history of messages."""
         summary_i = next(
             (

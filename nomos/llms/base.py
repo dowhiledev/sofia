@@ -65,13 +65,11 @@ class LLMBase:
         return "\n".join(tools_desc)
 
     @staticmethod
-    def format_history(
-        history: List[Union[Event, Message, Step, Summary]], max_errors: int = 3
-    ) -> str:
+    def format_history(history: List[Union[Event, Step, Summary]], max_errors: int = 3) -> str:
         """
         Format the chat history for display or LLM input.
 
-        :param history: List of Message or Step objects.
+        :param history: List of Event or Step objects.
         :param max_errors: Maximum number of consecutive errors to display.
         :return: String representation of the history.
         """
@@ -79,8 +77,8 @@ class LLMBase:
         # log_debug(f"Formatting chat history: {history}")
         n_last_consecutive_errors = 0
         for item in history:
-            if isinstance(item, (Message, Event)):
-                role = item.role if isinstance(item, Message) else item.type
+            if isinstance(item, Event):
+                role = item.type
                 if role == "error":
                     n_last_consecutive_errors += 1
                 else:
@@ -93,8 +91,8 @@ class LLMBase:
             )
         for i, item in enumerate(history):
             role_item: Optional[str] = None
-            if isinstance(item, (Message, Event)):
-                role_item = item.role if isinstance(item, Message) else item.type
+            if isinstance(item, Event):
+                role_item = item.type
             # If the error message is not within the last max_errors, skip it
             if (
                 role_item == "error"
@@ -112,7 +110,7 @@ class LLMBase:
         self,
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Event, Message, Step, Summary]],
+        history: List[Union[Event, Step, Summary]],
         system_message: str,
         persona: str,
         max_examples: int = 5,
@@ -182,7 +180,7 @@ class LLMBase:
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Event, Message, StepIdentifier, Summary]],
+        history: List[Union[Event, StepIdentifier, Summary]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
@@ -417,13 +415,11 @@ class LLMBase:
         similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
         return float(similarity)
 
-    def generate_summary(
-        self, history: List[Union[Event, Message, StepIdentifier, Summary]]
-    ) -> Summary:
+    def generate_summary(self, history: List[Union[Event, StepIdentifier, Summary]]) -> Summary:
         """
         Generate a summary of the conversation history.
 
-        :param history: List of Message or StepIdentifier objects.
+        :param history: List of Event or StepIdentifier objects.
         :return: Summary object containing the summarized content.
         """
         items_str = "\n".join(str(item) for item in history)

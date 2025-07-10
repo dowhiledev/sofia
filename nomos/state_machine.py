@@ -8,7 +8,7 @@ from colorama import Fore, Style
 from .config import AgentConfig
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
-from .models.agent import Event, FlowState, Message, State, Step, Summary
+from .models.agent import Event, FlowState, State, Step, Summary
 from .models.flow import Flow, FlowContext, FlowManager
 from .utils.flow_utils import create_flows_from_config
 
@@ -108,9 +108,7 @@ class StateMachine:
             recent_history = (
                 self.memory.get_history()[-10:] if self.memory and self.memory.get_history() else []
             )
-            previous_context = [
-                msg for msg in recent_history if isinstance(msg, (Event, Message, Summary))
-            ]
+            previous_context = [msg for msg in recent_history if isinstance(msg, (Event, Summary))]
 
             self.flow_context = flow.enter(
                 entry_step=entry_step,

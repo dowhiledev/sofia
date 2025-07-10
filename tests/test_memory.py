@@ -2,7 +2,7 @@ from nomos.llms.base import LLMBase
 from nomos.memory.base import Memory
 from nomos.memory.flow import FlowMemory, Retriver
 from nomos.memory.summary import PeriodicalSummarizationMemory
-from nomos.models.agent import Event, Message, Summary
+from nomos.models.agent import Event, Summary
 
 
 class StubRetriever(Retriver):
