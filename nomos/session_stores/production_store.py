@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import pickle
 from datetime import datetime, timezone
 from typing import Optional
 
