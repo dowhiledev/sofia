@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, JSON, func
+from sqlalchemy import JSON, Column, DateTime, func
 from sqlmodel import Field, SQLModel
 
 

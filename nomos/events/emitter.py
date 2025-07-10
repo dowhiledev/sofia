@@ -22,15 +22,17 @@ class KafkaEventEmitter:
         loop = asyncio.get_running_loop()
         # Use mode="json" to properly serialize datetime and enums
         try:
-            payload = json.dumps(event.model_dump(mode="json"), ensure_ascii=False).encode('utf-8')
-            
+            payload = json.dumps(event.model_dump(mode="json"), ensure_ascii=False).encode("utf-8")
+
             # Send to Kafka with proper error handling
             future = await loop.run_in_executor(None, self.producer.send, self.topic, payload)
-            
+
             # Log successful emission
-            logger.debug(f"Emitted event {event.event_type} for session {event.session_id} to Kafka topic {self.topic}")
-            
-        except json.JSONEncodeError as exc:
+            logger.debug(
+                f"Emitted event {event.event_type} for session {event.session_id} to Kafka topic {self.topic}"
+            )
+
+        except json.JSONDecodeError as exc:
             logger.error(f"JSON serialization error in Kafka emitter: {exc}")
         except Exception as exc:
             logger.warning(f"Kafka emitter error: {exc}")
