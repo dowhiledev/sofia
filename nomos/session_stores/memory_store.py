@@ -29,11 +29,19 @@ class InMemorySessionStore(SessionStoreBase):
                 if datetime.now(timezone.utc).timestamp() > expires:
                     await self.delete(session_id)
                     return None
+            if self.event_emitter:
+                session.set_event_emitter(self.event_emitter)
             return session
 
     async def set(self, session_id: str, session: AgentSession, ttl: Optional[int] = None) -> bool:
+        if self.event_emitter:
+            session.set_event_emitter(self.event_emitter)
         async with self._lock:
-            self._store[session_id] = (session, datetime.now(timezone.utc), ttl or self.default_ttl)
+            self._store[session_id] = (
+                session,
+                datetime.now(timezone.utc),
+                ttl or self.default_ttl,
+            )
             return True
 
     async def delete(self, session_id: str) -> bool:

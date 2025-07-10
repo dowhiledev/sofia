@@ -4,6 +4,7 @@ import pickle
 from datetime import datetime, timezone
 from typing import Optional
 
+from kafka import KafkaProducer
 from loguru import logger
 from redis.asyncio import Redis
 from sqlmodel import select
@@ -13,6 +14,12 @@ from nomos.types import Session as AgentSession
 
 from ..api.agent import agent
 from ..api.session_store import Session
+from ..events import (
+    CompositeEventEmitter,
+    DatabaseEventEmitter,
+    KafkaEventEmitter,
+    SessionEvent,
+)
 from ..models.agent import State
 from .base import SessionStoreBase
 from .memory_store import InMemorySessionStore
@@ -22,7 +29,12 @@ class ProductionSessionStore(SessionStoreBase):
     """PostgreSQL + Redis backed session store."""
 
     def __init__(
-        self, db: AsyncSession, redis: Optional[Redis] = None, cache_ttl: int = 3600
+        self,
+        db: AsyncSession,
+        redis: Optional[Redis] = None,
+        cache_ttl: int = 3600,
+        kafka_producer: Optional[KafkaProducer] = None,
+        kafka_topic: str = "session_events",
     ) -> None:
         super().__init__()
         self.db = db
@@ -30,12 +42,22 @@ class ProductionSessionStore(SessionStoreBase):
         self.cache_ttl = cache_ttl
         self.memory_store = InMemorySessionStore()
 
+        if kafka_producer:
+            emitter = CompositeEventEmitter(
+                KafkaEventEmitter(kafka_producer, kafka_topic),
+                DatabaseEventEmitter(db),
+            )
+            self.set_event_emitter(emitter)
+
     async def get(self, session_id: str) -> Optional[AgentSession]:
         if self.redis:
             try:
                 cached = await self.redis.get(f"session:{session_id}")
                 if cached:
-                    return pickle.loads(cached)
+                    session = pickle.loads(cached)
+                    if self.event_emitter:
+                        session.set_event_emitter(self.event_emitter)
+                    return session
             except Exception as e:
                 logger.warning(f"Redis error: {e}")
         try:
@@ -52,12 +74,19 @@ class ProductionSessionStore(SessionStoreBase):
                         )
                     except Exception as e:
                         logger.warning(f"Redis error: {e}")
+                if self.event_emitter:
+                    session.set_event_emitter(self.event_emitter)
                 return session
         except Exception as e:
             logger.warning(f"DB error: {e}")
-        return await self.memory_store.get(session_id)
+        session = await self.memory_store.get(session_id)
+        if session and self.event_emitter:
+            session.set_event_emitter(self.event_emitter)
+        return session
 
     async def set(self, session_id: str, session: AgentSession, ttl: Optional[int] = None) -> bool:
+        if self.event_emitter:
+            session.set_event_emitter(self.event_emitter)
         try:
             stmt = select(Session).where(Session.session_id == session_id)
             result = await self.db.exec(stmt)

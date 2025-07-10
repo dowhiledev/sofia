@@ -1,5 +1,6 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
+import asyncio
 import os
 import pickle
 import uuid
@@ -110,6 +111,9 @@ class Session:
         )
         self.state_machine.load_state(state)
 
+        # Optional event emitter used for analytics
+        self.event_emitter: Any = None
+
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -122,6 +126,10 @@ class Session:
     def memory(self) -> Memory:
         """Get the session memory."""
         return self.state_machine.memory
+
+    def set_event_emitter(self, emitter: Any) -> None:
+        """Attach an event emitter to this session."""
+        self.event_emitter = emitter
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""
@@ -253,6 +261,19 @@ class Session:
         else:
             # Only update session memory when not in a flow
             self.memory.add(event_obj)
+
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type=event_type,
+                    data={"content": content},
+                )
+                asyncio.create_task(self.event_emitter.emit(sess_event))
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit event: {exc}")
         log_debug(f"{event_type.title()} added: {content}")
 
     def _get_next_decision(
@@ -537,6 +558,19 @@ class Session:
         else:
             # Only update session memory when not in a flow
             self.memory.add(step_identifier)
+
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type="step",
+                    data={"step_id": step_identifier.step_id},
+                )
+                asyncio.create_task(self.event_emitter.emit(sess_event))
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit step event: {exc}")
 
         log_debug(f"Step identifier added: {step_identifier.step_id}")
 
