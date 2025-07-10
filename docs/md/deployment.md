@@ -68,6 +68,8 @@ The base image supports configuration via environment variables:
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 | `NOMOS_LOG_LEVEL` | Logging level (`DEBUG`, `INFO`, etc.) | No (default: `INFO`) |
 | `NOMOS_ENABLE_LOGGING` | Enable logging (`true`/`false`) | No (default: `false`) |
+| `KAFKA_BROKERS` | Kafka broker addresses | No |
+| `KAFKA_TOPIC` | Kafka topic for events | No (default: `session_events`) |
 
 ## Persistent Storage and Session Management
 
@@ -161,9 +163,11 @@ services:
       - ENABLE_TRACING=true
       - ELASTIC_APM_SERVER_URL=${APM_SERVER_URL}
       - ELASTIC_APM_TOKEN=${APM_TOKEN}
+      - KAFKA_BROKERS=kafka:9092
     depends_on:
       - postgres
       - redis
+      - kafka
 
   postgres:
     image: postgres:15
@@ -178,6 +182,19 @@ services:
     image: redis:7-alpine
     volumes:
       - redis_data:/data
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
 volumes:
   postgres_data:

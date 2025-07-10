@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Optional, Union
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
+from .config.session_config import SessionConfig
 from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
@@ -178,6 +179,9 @@ class AgentConfig(BaseSettings):
     server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
+    # Optional session store configuration
+    session: Optional[SessionConfig] = None
+
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
     @classmethod
@@ -199,6 +203,14 @@ class AgentConfig(BaseSettings):
                 for k, v in server_data.items()
             }
             data["server"] = expanded
+
+        session_data = data.get("session") or data.get("session_store")
+        if isinstance(session_data, dict):
+            expanded = {
+                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
+                for k, v in session_data.items()
+            }
+            data["session"] = expanded
 
         return cls(**data)
 
@@ -230,4 +242,4 @@ class AgentConfig(BaseSettings):
         return self.embedding_model.get_llm() if self.embedding_model else None
 
 
-__all__ = ["AgentConfig", "ServerConfig"]
+__all__ = ["AgentConfig", "ServerConfig", "SessionConfig"]

@@ -50,9 +50,9 @@ class SessionStore(SessionStoreBase):
         await self._store.close()
 
 
-async def create_session_store() -> SessionStore:
-    """Create a session store based on environment configuration."""
-    store = await SessionStoreFactory.create_store(SessionConfig.from_env())
+async def create_session_store(config: Optional[SessionConfig] = None) -> SessionStore:
+    """Create a session store based on configuration or environment variables."""
+    store = await SessionStoreFactory.create_store(config or SessionConfig.from_env())
     return SessionStore(store)
 
 
