@@ -108,12 +108,9 @@ class StateMachine:
             recent_history = (
                 self.memory.get_history()[-10:] if self.memory and self.memory.get_history() else []
             )
-            previous_context = []
-            for msg in recent_history:
-                if isinstance(msg, (Message, Summary)):
-                    previous_context.append(msg)
-                elif isinstance(msg, Event):
-                    previous_context.append(Message(role=msg.type, content=msg.content))
+            previous_context = [
+                msg for msg in recent_history if isinstance(msg, (Event, Message, Summary))
+            ]
 
             self.flow_context = flow.enter(
                 entry_step=entry_step,

@@ -270,21 +270,13 @@ class Session:
         )
 
         # Get memory context - use flow memory if available, otherwise use session memory
-        memory_context = [
-            Message(role=item.type, content=item.content) if isinstance(item, Event) else item
-            for item in self.memory.get_history()
-        ]
+        memory_context = self.memory.get_history()
         flow_memory_context = None
 
         if self.state_machine.current_flow and self.state_machine.flow_context:
             flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
-                flow_memory_context = [
-                    Message(role=item.type, content=item.content)
-                    if isinstance(item, Event)
-                    else item
-                    for item in flow_memory.memory.context
-                ]
+                flow_memory_context = flow_memory.memory.context
         _decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,

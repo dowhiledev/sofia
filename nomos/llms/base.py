@@ -78,13 +78,10 @@ class LLMBase:
         history_str = []
         # log_debug(f"Formatting chat history: {history}")
         n_last_consecutive_errors = 0
-        history = [
-            Message(role=item.type, content=item.content) if isinstance(item, Event) else item
-            for item in history
-        ]
         for item in history:
-            if isinstance(item, Message):
-                if item.role == "error":
+            if isinstance(item, (Message, Event)):
+                role = item.role if isinstance(item, Message) else item.type
+                if role == "error":
                     n_last_consecutive_errors += 1
                 else:
                     n_last_consecutive_errors = 0
@@ -95,16 +92,18 @@ class LLMBase:
                 f"Too many consecutive errors in history. Only showing the last {max_errors} errors out of  {n_last_consecutive_errors}"
             )
         for i, item in enumerate(history):
+            role_item: Optional[str] = None
+            if isinstance(item, (Message, Event)):
+                role_item = item.role if isinstance(item, Message) else item.type
             # If the error message is not within the last max_errors, skip it
             if (
-                isinstance(item, Message)
-                and item.role == "error"
+                role_item == "error"
                 and n_last_consecutive_errors > max_errors
                 and i < len(history) - max_errors
             ):
                 continue
             # If the fallback message is not the last one in the history, skip it
-            if isinstance(item, Message) and item.role == "fallback" and i < len(history) - 1:
+            if role_item == "fallback" and i < len(history) - 1:
                 continue
             history_str.append(str(item))
         return "\n".join(history_str)
@@ -427,14 +426,7 @@ class LLMBase:
         :param history: List of Message or StepIdentifier objects.
         :return: Summary object containing the summarized content.
         """
-        items_str = "\n".join(
-            [
-                str(Message(role=item.type, content=item.content))
-                if isinstance(item, Event)
-                else str(item)
-                for item in history
-            ]
-        )
+        items_str = "\n".join(str(item) for item in history)
         summary = self.get_output(
             messages=[
                 Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),

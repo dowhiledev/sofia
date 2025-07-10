@@ -141,14 +141,7 @@ class FlowMemory(Memory):
 
     def _generate_summary(self, items: List[Union[Event, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
-        items_str = "\n".join(
-            [
-                str(Message(role=item.type, content=item.content))
-                if isinstance(item, Event)
-                else str(item)
-                for item in items
-            ]
-        )
+        items_str = "\n".join(str(item) for item in items)
         summary = self.llm.get_output(
             messages=[
                 Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
