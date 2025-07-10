@@ -529,8 +529,8 @@ class TestFromConfigErrors:
 class TestMemoryOperations:
     """Test memory operations without flows."""
 
-    def test_add_message_without_flow(self, basic_agent):
-        """Test adding message when no flow is active."""
+    def test_add_event_without_flow(self, basic_agent):
+        """Test adding event when no flow is active."""
         session = basic_agent.create_session()
 
         # Ensure no flow is active
@@ -1196,6 +1196,40 @@ class TestAgentNext:
         assert res.decision.action == Action.RESPOND
         assert hasattr(res.state, "session_id")
         assert res.state.current_step_id == "start"
+
+    def test_agent_next_strips_event_decision_by_default(self, basic_agent):
+        session = basic_agent.create_session()
+        decision_model = basic_agent.llm._create_decision_model(
+            current_step=basic_agent.steps["start"],
+            current_step_tools=tuple(session._get_current_step_tools()),
+        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
+        basic_agent.llm.set_response(response)
+
+        res = basic_agent.next("hi")
+        decisions = [
+            e.decision
+            for e in res.state.history
+            if isinstance(e, Event) and e.type == basic_agent.name
+        ]
+        assert decisions and all(d is None for d in decisions)
+
+    def test_agent_next_keep_event_decision_flag(self, basic_agent):
+        session = basic_agent.create_session()
+        decision_model = basic_agent.llm._create_decision_model(
+            current_step=basic_agent.steps["start"],
+            current_step_tools=tuple(session._get_current_step_tools()),
+        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
+        basic_agent.llm.set_response(response)
+
+        res = basic_agent.next("hi", keep_event_decision=True)
+        decisions = [
+            e.decision
+            for e in res.state.history
+            if isinstance(e, Event) and e.type == basic_agent.name
+        ]
+        assert decisions and all(d is not None for d in decisions)
 
     def test_current_step_tools_with_missing_tool_logging(self, basic_agent):
         """Test _get_current_step_tools handling when tool is missing."""

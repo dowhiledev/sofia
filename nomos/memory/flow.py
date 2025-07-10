@@ -126,9 +126,7 @@ class FlowMemory(Memory):
         self.retriever = retriever.get_retriever(self.llm)
         self.context = []
 
-    def _enter(
-        self, previous_context: Optional[List[Union[Event, Message, Summary]]] = None
-    ) -> None:
+    def _enter(self, previous_context: Optional[List[Union[Event, Summary]]] = None) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
             summary = self._generate_summary(previous_context)
@@ -138,14 +136,10 @@ class FlowMemory(Memory):
     def _exit(self) -> Summary:
         """Exit the flow memory and return a summary of the context."""
         return self._generate_summary(
-            [
-                Message(role=item.type, content=item.content) if isinstance(item, Event) else item
-                for item in self.context
-                if isinstance(item, (Event, Message, Summary))
-            ]
+            [item for item in self.context if isinstance(item, (Event, Summary))]
         )
 
-    def _generate_summary(self, items: List[Union[Event, Message, Summary]]) -> Summary:
+    def _generate_summary(self, items: List[Union[Event, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
         items_str = "\n".join(
             [
@@ -172,10 +166,10 @@ class FlowMemory(Memory):
         """Search for items in memory that match the query."""
         return self.retriever.retrieve(query, **kwargs)
 
-    def add_message(self, message: Union[Event, Message]) -> None:
-        """Add a message or event to the flow context."""
-        self.context.append(message)
-        self.retriever.update([str(message)])
+    def add_event(self, event: Event) -> None:
+        """Add an event to the flow context."""
+        self.context.append(event)
+        self.retriever.update([str(event)])
 
     def get_context_summary(self) -> str:
         """Get a summary of the current context."""

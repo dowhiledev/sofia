@@ -773,6 +773,7 @@ class Agent:
         return_step: bool = False,
         verbose: bool = False,
         decision_constraints: Optional[DecisionConstraints] = None,
+        keep_event_decision: bool = False,
     ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -783,6 +784,7 @@ class Agent:
         :param return_step: Whether to return step Transitions.
         :param verbose: Whether to return verbose output.
         :param decision_constraints: Optional constraints for the decision model on retry.
+        :param keep_event_decision: Whether to retain decision data in returned events.
         :return: A tuple containing the decision and tool output, along with the updated session state.
         :raises ValueError: If session_data is provided but not a valid State object.
         """
@@ -800,7 +802,16 @@ class Agent:
             decision_constraints=decision_constraints,
             verbose=verbose,
         )
-        res.state = session.get_state()
+        state = session.get_state()
+        if not keep_event_decision:
+            for item in state.history:
+                if isinstance(item, Event):
+                    item.decision = None
+            if state.flow_state:
+                for item in state.flow_state.flow_memory_context:
+                    if isinstance(item, Event):
+                        item.decision = None
+        res.state = state
         return res
 
     def display(self, save_path: Optional[str] = None, is_notebook: bool = True) -> None:

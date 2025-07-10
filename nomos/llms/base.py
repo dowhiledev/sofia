@@ -13,6 +13,7 @@ from ..constants import (
 from ..models.agent import (
     Decision,
     DecisionConstraints,
+    Event,
     Message,
     Step,
     StepIdentifier,
@@ -64,7 +65,9 @@ class LLMBase:
         return "\n".join(tools_desc)
 
     @staticmethod
-    def format_history(history: List[Union[Message, Step, Summary]], max_errors: int = 3) -> str:
+    def format_history(
+        history: List[Union[Event, Message, Step, Summary]], max_errors: int = 3
+    ) -> str:
         """
         Format the chat history for display or LLM input.
 
@@ -75,6 +78,10 @@ class LLMBase:
         history_str = []
         # log_debug(f"Formatting chat history: {history}")
         n_last_consecutive_errors = 0
+        history = [
+            Message(role=item.type, content=item.content) if isinstance(item, Event) else item
+            for item in history
+        ]
         for item in history:
             if isinstance(item, Message):
                 if item.role == "error":
@@ -106,7 +113,7 @@ class LLMBase:
         self,
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, Step, Summary]],
+        history: List[Union[Event, Message, Step, Summary]],
         system_message: str,
         persona: str,
         max_examples: int = 5,
@@ -176,7 +183,7 @@ class LLMBase:
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, StepIdentifier, Summary]],
+        history: List[Union[Event, Message, StepIdentifier, Summary]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
@@ -411,14 +418,23 @@ class LLMBase:
         similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
         return float(similarity)
 
-    def generate_summary(self, history: List[Union[Message, StepIdentifier, Summary]]) -> Summary:
+    def generate_summary(
+        self, history: List[Union[Event, Message, StepIdentifier, Summary]]
+    ) -> Summary:
         """
         Generate a summary of the conversation history.
 
         :param history: List of Message or StepIdentifier objects.
         :return: Summary object containing the summarized content.
         """
-        items_str = "\n".join([str(item) for item in history])
+        items_str = "\n".join(
+            [
+                str(Message(role=item.type, content=item.content))
+                if isinstance(item, Event)
+                else str(item)
+                for item in history
+            ]
+        )
         summary = self.get_output(
             messages=[
                 Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
