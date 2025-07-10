@@ -20,11 +20,22 @@ class KafkaEventEmitter:
 
     async def emit(self, event: SessionEvent) -> None:
         loop = asyncio.get_running_loop()
-        payload = json.dumps(event.model_dump()).encode()
+        # Use mode="json" to properly serialize datetime and enums
         try:
-            await loop.run_in_executor(None, self.producer.send, self.topic, payload)
-        except Exception as exc:  # noqa: BLE001
+            payload = json.dumps(event.model_dump(mode="json"), ensure_ascii=False).encode('utf-8')
+            
+            # Send to Kafka with proper error handling
+            future = await loop.run_in_executor(None, self.producer.send, self.topic, payload)
+            
+            # Log successful emission
+            logger.debug(f"Emitted event {event.event_type} for session {event.session_id} to Kafka topic {self.topic}")
+            
+        except json.JSONEncodeError as exc:
+            logger.error(f"JSON serialization error in Kafka emitter: {exc}")
+        except Exception as exc:
             logger.warning(f"Kafka emitter error: {exc}")
+            # Consider if you want to raise here or just log
+            # For now, we'll just log to avoid breaking the main flow
 
 
 class DatabaseEventEmitter:
@@ -34,18 +45,25 @@ class DatabaseEventEmitter:
         self.session = session
 
     async def emit(self, event: SessionEvent) -> None:
-        model = SessionEventModel(
-            session_id=event.session_id,
-            event_type=event.event_type,
-            data=event.data,
-            decision=(
-                event.decision.model_dump(mode="json") if event.decision is not None else None
-            ),
-            timestamp=event.timestamp,
-        )
-        self.session.add(model)
-        # Don't commit here - let the main transaction handle the commit
-        # to avoid SQLAlchemy warnings about nested transactions
+        try:
+            model = SessionEventModel(
+                session_id=event.session_id,
+                event_type=event.event_type,
+                data=event.data,
+                decision=(
+                    event.decision.model_dump(mode="json") if event.decision is not None else None
+                ),
+                timestamp=event.timestamp,
+            )
+            self.session.add(model)
+            # Don't commit here - let the main transaction handle the commit
+            # to avoid SQLAlchemy warnings about nested transactions during session operations
+        except Exception as exc:
+            logger.warning(f"Database emitter error: {exc}")
+            try:
+                await self.session.rollback()
+            except Exception:
+                pass
 
 
 class CompositeEventEmitter:

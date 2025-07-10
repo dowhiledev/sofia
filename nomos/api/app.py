@@ -74,8 +74,8 @@ async def get_chat_ui() -> HTMLResponse:
 async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
     """Create a new session."""
     assert session_store is not None, "Session store not initialized"
-    session_id = str(uuid.uuid4())
     session = agent.create_session()
+    session_id = session.session_id  # Use the session's internal ID
     await session_store.set(session_id, session)
     # Get initial message from agent
     if initiate:

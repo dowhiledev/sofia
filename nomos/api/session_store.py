@@ -4,30 +4,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, JSON, func
-from sqlmodel import Field, SQLModel
-
 from nomos.types import Session as AgentSession
 
 from ..config import SessionConfig
+from ..models.session import Session
 from ..session_stores import SessionStoreBase, SessionStoreFactory
-
-
-class Session(SQLModel, table=True):  # type: ignore
-    """Database model for persisting sessions."""
-
-    __tablename__ = "sessions"
-
-    session_id: str = Field(primary_key=True)
-    session_data: dict = Field(default=dict, sa_column=Column(JSON))
-    created_at: Optional[str] = Field(
-        sa_column=Column(DateTime(timezone=True), default=func.now(), nullable=False)
-    )
-    updated_at: Optional[str] = Field(
-        sa_column=Column(
-            DateTime(timezone=True), default=func.now(), onupdate=func.now(), nullable=False
-        )
-    )
 
 
 class SessionStore(SessionStoreBase):

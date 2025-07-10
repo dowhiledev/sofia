@@ -272,10 +272,20 @@ class Session:
                     data={"content": content},
                     decision=decision,
                 )
-                asyncio.create_task(self.event_emitter.emit(sess_event))
+                # Use create_task but don't await to avoid blocking
+                # Add error handling for the task
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
             except Exception as exc:  # noqa: BLE001
                 log_error(f"Failed to emit event: {exc}")
         log_debug(f"{event_type.title()} added: {content}")
+
+    def _handle_event_emission_error(self, task: asyncio.Task) -> None:
+        """Handle errors from event emission tasks."""
+        try:
+            task.result()  # This will raise any exception that occurred
+        except Exception as exc:
+            log_error(f"Event emission failed: {exc}")
 
     def _get_next_decision(
         self, decision_constraints: Optional[DecisionConstraints] = None
@@ -569,7 +579,9 @@ class Session:
                     event_type="step",
                     data={"step_id": step_identifier.step_id},
                 )
-                asyncio.create_task(self.event_emitter.emit(sess_event))
+                # Use create_task but add error handling
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
             except Exception as exc:  # noqa: BLE001
                 log_error(f"Failed to emit step event: {exc}")
 

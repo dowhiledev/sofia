@@ -995,6 +995,7 @@ source = { editable = "." }
 dependencies = [
     { name = "colorama" },
     { name = "docstring-parser" },
+    { name = "greenlet" },
     { name = "loguru" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1062,6 +1063,7 @@ requires-dist = [
     { name = "fastapi", marker = "extra == 'serve'", specifier = ">=0.115.12,<0.116.0" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.7.1" },
     { name = "google-genai", marker = "extra == 'google'", specifier = ">=1.12.1,<2.0.0" },
+    { name = "greenlet", specifier = ">=3.2.3" },
     { name = "huggingface-hub", marker = "extra == 'huggingface'", specifier = ">=0.32.0" },
     { name = "kafka-python", marker = "extra == 'serve'", specifier = ">=2.2.15" },
     { name = "loguru", specifier = ">=0.7.3,<0.8.0" },
