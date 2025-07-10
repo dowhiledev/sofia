@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy import JSON, Column, DateTime
 from sqlmodel import Field, SQLModel
 
+from ..models.agent import Decision
+
 
 class SessionEvent(BaseModel):
     """Runtime event emitted during a session."""
@@ -14,6 +16,7 @@ class SessionEvent(BaseModel):
     session_id: str
     event_type: str
     data: Dict[str, Any] = {}
+    decision: Optional[Decision] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -26,6 +29,7 @@ class SessionEventModel(SQLModel, table=True):  # type: ignore
     session_id: str
     event_type: str
     data: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    decision: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON, nullable=True))
     timestamp: datetime = Field(
         default_factory=datetime.utcnow,
         sa_column=Column(DateTime(timezone=True), nullable=False),

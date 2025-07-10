@@ -38,6 +38,9 @@ class DatabaseEventEmitter:
             session_id=event.session_id,
             event_type=event.event_type,
             data=event.data,
+            decision=(
+                event.decision.model_dump(mode="json") if event.decision is not None else None
+            ),
             timestamp=event.timestamp,
         )
         self.session.add(model)

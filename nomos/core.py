@@ -270,6 +270,7 @@ class Session:
                     session_id=self.session_id,
                     event_type=event_type,
                     data={"content": content},
+                    decision=decision,
                 )
                 asyncio.create_task(self.event_emitter.emit(sess_event))
             except Exception as exc:  # noqa: BLE001
