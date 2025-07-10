@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  barista-agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SESSION_STORE: production
+      DATABASE_URL: postgresql+asyncpg://nomos:nomos@postgres/nomos
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BROKERS: kafka:9092
+      SESSION_EVENTS: "true"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: nomos
+      POSTGRES_USER: nomos
+      POSTGRES_PASSWORD: nomos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: 'yes'
+volumes:
+  postgres_data:
+  redis_data:
