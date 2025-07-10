@@ -406,12 +406,12 @@ def create_action_enum(actions: List[str]) -> Enum:
 
 def history_to_types(
     context: List[dict],
-) -> List[Union[Event, Message, Summary, StepIdentifier]]:
+) -> List[Union[Event, Summary, StepIdentifier]]:
     """
-    Convert a history dictionary to a list of Message, Summary, or StepIdentifier objects.
+    Convert a list of history dictionaries to structured Event records.
 
     :param context: Dictionary containing the history.
-    :return: List of Message, Summary, or StepIdentifier objects.
+    :return: List of Event, Summary, or StepIdentifier objects.
     """
     history = []
     for item in context:
@@ -419,7 +419,7 @@ def history_to_types(
             if "type" in item and "content" in item:
                 history.append(Event(**item))
             elif "role" in item and "content" in item:
-                history.append(Message(**item))
+                history.append(Event(type=item["role"], content=item["content"]))
             elif "summary" in item:
                 history.append(Summary(**item))
             elif "step_id" in item:

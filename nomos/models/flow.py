@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from .agent import Message, Step, Summary
+from .agent import Event, Message, Step, Summary
 
 
 class FlowContext(BaseModel):
@@ -13,7 +13,7 @@ class FlowContext(BaseModel):
 
     flow_id: str
     entry_step: str
-    previous_context: Optional[List[Union[Message, Summary]]] = None
+    previous_context: Optional[List[Union[Event, Message, Summary]]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)  # noqa: ANN401
 
 
@@ -112,7 +112,7 @@ class Flow:
     def enter(
         self,
         entry_step: str,
-        previous_context: Optional[List[Union[Message, Summary]]] = None,
+        previous_context: Optional[List[Union[Event, Message, Summary]]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> FlowContext:
         """Enter the flow at a specific step."""
