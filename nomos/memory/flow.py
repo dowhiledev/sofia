@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase, LLMConfig
-from ..models.agent import Message, StepIdentifier, Summary
+from ..models.agent import Event, Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
 from .base import Memory
 
@@ -126,7 +126,9 @@ class FlowMemory(Memory):
         self.retriever = retriever.get_retriever(self.llm)
         self.context = []
 
-    def _enter(self, previous_context: Optional[List[Union[Message, Summary]]] = None) -> None:
+    def _enter(
+        self, previous_context: Optional[List[Union[Event, Message, Summary]]] = None
+    ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
             summary = self._generate_summary(previous_context)
@@ -136,12 +138,23 @@ class FlowMemory(Memory):
     def _exit(self) -> Summary:
         """Exit the flow memory and return a summary of the context."""
         return self._generate_summary(
-            [item for item in self.context if isinstance(item, (Message, Summary))]
+            [
+                Message(role=item.type, content=item.content) if isinstance(item, Event) else item
+                for item in self.context
+                if isinstance(item, (Event, Message, Summary))
+            ]
         )
 
-    def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
+    def _generate_summary(self, items: List[Union[Event, Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
-        items_str = "\n".join([str(item) for item in items])
+        items_str = "\n".join(
+            [
+                str(Message(role=item.type, content=item.content))
+                if isinstance(item, Event)
+                else str(item)
+                for item in items
+            ]
+        )
         summary = self.llm.get_output(
             messages=[
                 Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
@@ -159,8 +172,8 @@ class FlowMemory(Memory):
         """Search for items in memory that match the query."""
         return self.retriever.retrieve(query, **kwargs)
 
-    def add_message(self, message: Message) -> None:
-        """Add a message to the flow context."""
+    def add_message(self, message: Union[Event, Message]) -> None:
+        """Add a message or event to the flow context."""
         self.context.append(message)
         self.retriever.update([str(message)])
 
@@ -203,7 +216,7 @@ class FlowMemoryComponent(FlowComponent):
         """Search in flow memory."""
         return self.memory._search(query, **kwargs)
 
-    def add_to_context(self, item: Union[Message, Summary, StepIdentifier]) -> None:
+    def add_to_context(self, item: Union[Event, Message, Summary, StepIdentifier]) -> None:
         """Add item to flow memory context."""
         self.memory.context.append(item)
         self.memory.retriever.update([str(item)])

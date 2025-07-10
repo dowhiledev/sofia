@@ -2,7 +2,7 @@ from nomos.llms.base import LLMBase
 from nomos.memory.base import Memory
 from nomos.memory.flow import FlowMemory, Retriver
 from nomos.memory.summary import PeriodicalSummarizationMemory
-from nomos.models.agent import Message, Summary
+from nomos.models.agent import Event, Message, Summary
 
 
 class StubRetriever(Retriver):
@@ -51,7 +51,7 @@ def test_flow_memory_enter_appends_summary():
     memory.context = []
     memory._generate_summary = lambda items: Summary(summary=["sum"])
 
-    previous = [Message(role="user", content="hi")]
+    previous = [Event(type="user", content="hi")]
     memory._enter(previous)
 
     assert len(memory.context) == 1

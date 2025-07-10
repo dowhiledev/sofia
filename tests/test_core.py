@@ -13,7 +13,7 @@ from nomos.models.agent import (
     Action,
     Decision,
     DecisionConstraints,
-    Message,
+    Event,
     Route,
     Step,
     StepIdentifier,
@@ -153,8 +153,8 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     assert res.tool_output == "Test tool 0 response: test_arg"
 
     # Verify tool message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "tool" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "tool" for msg in messages)
 
 
 def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
@@ -193,8 +193,8 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "tool" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "tool" for msg in messages)
 
 
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
@@ -231,8 +231,8 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
         session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "error" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "error" for msg in messages)
 
 
 def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
@@ -505,8 +505,8 @@ class TestEndAction:
         assert res.tool_output is None
 
         # Check that end message was added
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        end_msgs = [msg for msg in messages if msg.role == "end"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        end_msgs = [msg for msg in messages if msg.type == "end"]
         assert len(end_msgs) == 1
         assert "Session ended" in end_msgs[0].content
 
@@ -537,13 +537,13 @@ class TestMemoryOperations:
         session.state_machine.current_flow = None
         session.state_machine.flow_context = None
 
-        session._add_message("user", "Test message")
+        session._add_event("user", "Test message")
 
-        # Message should be added to session memory
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        assert len(messages) == 1
-        assert messages[0].role == "user"
-        assert messages[0].content == "Test message"
+        # Event should be added to session memory
+        events = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        assert len(events) == 1
+        assert events[0].type == "user"
+        assert events[0].content == "Test message"
 
     def test_add_step_identifier_without_flow(self, basic_agent):
         """Test adding step identifier when no flow is active."""
@@ -568,7 +568,7 @@ class TestSessionStateOperations:
     def test_get_state_basic(self, basic_agent):
         """Test getting session state."""
         session = basic_agent.create_session()
-        session._add_message("user", "Hello")
+        session._add_event("user", "Hello")
 
         state = session.get_state()
 
@@ -637,7 +637,7 @@ class TestMaxIterationsBehavior:
         # and ensure auto_flow=False so it adds fallback message instead of raising RecursionError
 
         # First, manually add the fallback message that would be added when max_iter is reached
-        session._add_message(
+        session._add_event(
             "fallback",
             "Maximum iterations reached. Inform the user and based on the "
             "available context, produce a fallback response.",
@@ -660,8 +660,8 @@ class TestMaxIterationsBehavior:
         res = session.next(next_count=5)
 
         # Verify fallback message was added and response was generated
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        fallback_msgs = [msg for msg in messages if msg.role == "fallback"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        fallback_msgs = [msg for msg in messages if msg.type == "fallback"]
         assert len(fallback_msgs) == 1
         assert "Maximum iterations reached" in fallback_msgs[0].content
         assert res.decision.action == Action.RESPOND
@@ -738,8 +738,8 @@ class TestSessionPersistence:
 
         # Create session and add some history
         session = simple_agent.create_session()
-        session._add_message("user", "Hello")
-        session._add_message("assistant", "Hi there")
+        session._add_event("user", "Hello")
+        session._add_event("assistant", "Hi there")
 
         # Change working directory to temp path for the test
         original_cwd = os.getcwd()
@@ -818,7 +818,7 @@ class TestSessionStateOperationsExtended:
         assert session.session_id == "test_session"
         assert session.current_step.step_id == "start"
         assert len(session.memory.context) == 3
-        assert isinstance(session.memory.context[0], Message)
+        assert isinstance(session.memory.context[0], Event)
         assert isinstance(session.memory.context[2], StepIdentifier)
 
     def test_get_session_from_state_with_summary(self, basic_agent):
@@ -961,7 +961,7 @@ class TestAdvancedErrorHandling:
 
         assert res.decision.action == Action.RESPOND
         assert res.decision.response == "ok"
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
         assert any("requires a response" in msg.content for msg in messages)
 
 
@@ -1038,7 +1038,7 @@ class TestFlowIntegration:
         session.state_machine.flow_context = mock_flow_context
 
         # Add message should go to flow memory, not session memory
-        session._add_message("user", "Test message")
+        session._add_event("user", "Test message")
 
         mock_flow_memory.add_to_context.assert_called_once()
         # Session memory should not be updated
@@ -1104,8 +1104,8 @@ class TestEndActionFlow:
         assert session.state_machine.flow_context is None
 
         # Verify end message was added
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        end_msgs = [msg for msg in messages if msg.role == "end"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        end_msgs = [msg for msg in messages if msg.type == "end"]
         assert len(end_msgs) == 1
         assert "Session ended" in end_msgs[0].content
 
@@ -1147,10 +1147,10 @@ class TestAgentNext:
 
     def test_agent_next_with_session_context_object(self, basic_agent):
         """Test Agent.next with session State object."""
-        from nomos.models.agent import Message, State
+        from nomos.models.agent import Event, State
 
         session_context = State(
-            current_step_id="start", history=[Message(role="user", content="Hello")]
+            current_step_id="start", history=[Event(type="user", content="Hello")]
         )
 
         # Create a session and get tools from it
