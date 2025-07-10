@@ -13,6 +13,7 @@ from ..constants import (
 from ..models.agent import (
     Decision,
     DecisionConstraints,
+    Event,
     Message,
     Step,
     StepIdentifier,
@@ -64,11 +65,11 @@ class LLMBase:
         return "\n".join(tools_desc)
 
     @staticmethod
-    def format_history(history: List[Union[Message, Step, Summary]], max_errors: int = 3) -> str:
+    def format_history(history: List[Union[Event, Step, Summary]], max_errors: int = 3) -> str:
         """
         Format the chat history for display or LLM input.
 
-        :param history: List of Message or Step objects.
+        :param history: List of Event or Step objects.
         :param max_errors: Maximum number of consecutive errors to display.
         :return: String representation of the history.
         """
@@ -76,8 +77,9 @@ class LLMBase:
         # log_debug(f"Formatting chat history: {history}")
         n_last_consecutive_errors = 0
         for item in history:
-            if isinstance(item, Message):
-                if item.role == "error":
+            if isinstance(item, Event):
+                role = item.type
+                if role == "error":
                     n_last_consecutive_errors += 1
                 else:
                     n_last_consecutive_errors = 0
@@ -88,16 +90,18 @@ class LLMBase:
                 f"Too many consecutive errors in history. Only showing the last {max_errors} errors out of  {n_last_consecutive_errors}"
             )
         for i, item in enumerate(history):
+            role_item: Optional[str] = None
+            if isinstance(item, Event):
+                role_item = item.type
             # If the error message is not within the last max_errors, skip it
             if (
-                isinstance(item, Message)
-                and item.role == "error"
+                role_item == "error"
                 and n_last_consecutive_errors > max_errors
                 and i < len(history) - max_errors
             ):
                 continue
             # If the fallback message is not the last one in the history, skip it
-            if isinstance(item, Message) and item.role == "fallback" and i < len(history) - 1:
+            if role_item == "fallback" and i < len(history) - 1:
                 continue
             history_str.append(str(item))
         return "\n".join(history_str)
@@ -106,7 +110,7 @@ class LLMBase:
         self,
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, Step, Summary]],
+        history: List[Union[Event, Step, Summary]],
         system_message: str,
         persona: str,
         max_examples: int = 5,
@@ -176,7 +180,7 @@ class LLMBase:
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, StepIdentifier, Summary]],
+        history: List[Union[Event, StepIdentifier, Summary]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
@@ -411,14 +415,14 @@ class LLMBase:
         similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
         return float(similarity)
 
-    def generate_summary(self, history: List[Union[Message, StepIdentifier, Summary]]) -> Summary:
+    def generate_summary(self, history: List[Union[Event, StepIdentifier, Summary]]) -> Summary:
         """
         Generate a summary of the conversation history.
 
-        :param history: List of Message or StepIdentifier objects.
+        :param history: List of Event or StepIdentifier objects.
         :return: Summary object containing the summarized content.
         """
-        items_str = "\n".join([str(item) for item in history])
+        items_str = "\n".join(str(item) for item in history)
         summary = self.get_output(
             messages=[
                 Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),

@@ -2,6 +2,7 @@
 
 import heapq
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -264,6 +265,18 @@ class Step(BaseModel):
             example._ctx_embedding = emb
 
 
+class Event(BaseModel):
+    """An event stored in memory."""
+
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    type: str
+    content: str
+    decision: Optional["Decision"] = None
+
+    def __str__(self) -> str:
+        return f"[{self.type.title()}] {self.content}"
+
+
 class Message(BaseModel):
     """
     Represents a message in the conversation history.
@@ -301,7 +314,7 @@ class FlowState(BaseModel):
 
     flow_id: str
     flow_context: "FlowContext"
-    flow_memory_context: List[Union[Message, Summary, StepIdentifier]] = Field(default_factory=list)
+    flow_memory_context: List[Union[Event, Summary, StepIdentifier]] = Field(default_factory=list)
 
 
 class State(BaseModel):
@@ -309,7 +322,7 @@ class State(BaseModel):
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
     current_step_id: str
-    history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
+    history: List[Union[Summary, Event, StepIdentifier]] = Field(default_factory=list)
     flow_state: Optional[FlowState] = None
 
 
@@ -393,18 +406,20 @@ def create_action_enum(actions: List[str]) -> Enum:
 
 def history_to_types(
     context: List[dict],
-) -> List[Union[Message, Summary, StepIdentifier]]:
+) -> List[Union[Event, Summary, StepIdentifier]]:
     """
-    Convert a history dictionary to a list of Message, Summary, or StepIdentifier objects.
+    Convert a list of history dictionaries to structured Event records.
 
     :param context: Dictionary containing the history.
-    :return: List of Message, Summary, or StepIdentifier objects.
+    :return: List of Event, Summary, or StepIdentifier objects.
     """
     history = []
     for item in context:
         if isinstance(item, dict):
-            if "role" in item and "content" in item:
-                history.append(Message(**item))
+            if "type" in item and "content" in item:
+                history.append(Event(**item))
+            elif "role" in item and "content" in item:
+                history.append(Event(type=item["role"], content=item["content"]))
             elif "summary" in item:
                 history.append(Summary(**item))
             elif "step_id" in item:
@@ -438,6 +453,7 @@ __all__ = [
     "Route",
     "Step",
     "ToolCall",
+    "Event",
     "Message",
     "Response",
     "Summary",
