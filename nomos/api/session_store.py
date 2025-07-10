@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, func
+from sqlalchemy import Column, DateTime, JSON, func
 from sqlmodel import Field, SQLModel
 
 from nomos.types import Session as AgentSession
 
-from ..config.session_config import SessionConfig
+from ..config import SessionConfig
 from ..session_stores import SessionStoreBase, SessionStoreFactory
 
 
@@ -19,7 +19,7 @@ class Session(SQLModel, table=True):  # type: ignore
     __tablename__ = "sessions"
 
     session_id: str = Field(primary_key=True)
-    session_data: dict = Field(default=dict)
+    session_data: dict = Field(default=dict, sa_column=Column(JSON))
     created_at: Optional[str] = Field(
         sa_column=Column(DateTime(timezone=True), default=func.now(), nullable=False)
     )

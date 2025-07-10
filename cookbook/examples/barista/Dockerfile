@@ -1,5 +1,5 @@
-FROM dowhiledev/nomos-base:latest
+FROM nomos
 WORKDIR /app
 COPY config.agent.yaml /app/config.agent.yaml
-COPY barista_tools.py /app/src/tools/
+COPY barista_tools.py /app/barista_tools.py
 CMD ["nomos", "serve", "--config", "config.agent.yaml"]

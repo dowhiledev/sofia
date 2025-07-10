@@ -13,12 +13,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from nomos.types import Session as AgentSession
 
 from ..api.agent import agent
-from ..api.session_store import Session
+from ..core import Session
 from ..events import (
     CompositeEventEmitter,
     DatabaseEventEmitter,
     KafkaEventEmitter,
-    SessionEvent,
 )
 from ..models.agent import State
 from .base import SessionStoreBase

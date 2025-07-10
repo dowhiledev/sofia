@@ -6,7 +6,7 @@ from kafka import KafkaProducer
 from redis.asyncio import Redis
 
 from ..api.db import get_session
-from ..config.session_config import SessionConfig, SessionStoreType
+from ..config import SessionConfig, SessionStoreType
 from .base import SessionStoreBase
 from .memory_store import InMemorySessionStore
 from .production_store import ProductionSessionStore

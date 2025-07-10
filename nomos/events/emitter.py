@@ -44,11 +44,8 @@ class DatabaseEventEmitter:
             timestamp=event.timestamp,
         )
         self.session.add(model)
-        try:
-            await self.session.commit()
-        except Exception as exc:  # noqa: BLE001
-            await self.session.rollback()
-            logger.warning(f"DB emitter error: {exc}")
+        # Don't commit here - let the main transaction handle the commit
+        # to avoid SQLAlchemy warnings about nested transactions
 
 
 class CompositeEventEmitter:
