@@ -57,11 +57,12 @@ class TestMCPServer:
             }
         }
         mock_client.list_tools.return_value = [mock_tool]
-        server = MCPServer(name="server", url="https://example.com")
+        auth_key = "test_auth_key"
+        server = MCPServer(name="server", url="https://example.com", auth=auth_key)
         result = await server.list_tools_async()
 
         # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
+        mock_client_class.assert_called_once_with(server.url_path, auth=auth_key)
         mock_client.list_tools.assert_called_once()
 
         assert result[0].name == "test_tool"
@@ -87,11 +88,12 @@ class TestMCPServer:
         # Mock the call to the tool
         mock_client.call_tool.return_value = [call_tool_result]
 
-        server = MCPServer(name="server", url="https://example.com")
+        auth_key = "test_auth_key"
+        server = MCPServer(name="server", url="https://example.com", auth=auth_key)
         result = await server.call_tool_async(tool_name, params)
 
         # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
+        mock_client_class.assert_called_once_with(server.url_path, auth=auth_key)
         mock_client.call_tool.assert_called_once_with(tool_name, params)
 
         assert result == [call_tool_result.text]
