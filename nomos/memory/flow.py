@@ -216,7 +216,7 @@ class FlowMemoryComponent(FlowComponent):
         """Search in flow memory."""
         return self.memory._search(query, **kwargs)
 
-    def add_to_context(self, item: Union[Event, Message, Summary, StepIdentifier]) -> None:
+    def add_to_context(self, item: Union[Event, Summary, StepIdentifier]) -> None:
         """Add item to flow memory context."""
         self.memory.context.append(item)
         self.memory.retriever.update([str(item)])

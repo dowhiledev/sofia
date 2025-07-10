@@ -238,9 +238,11 @@ class Session:
         self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
-    def _add_event(self, event_type: str, content: str) -> None:
+    def _add_event(
+        self, event_type: str, content: str, decision: Optional[Decision] = None
+    ) -> None:
         """Add an event to the session history."""
-        event_obj = Event(type=event_type, content=content)
+        event_obj = Event(type=event_type, content=content, decision=decision)
 
         # If we're in a flow, only update flow memory
         if self.state_machine.current_flow and self.state_machine.flow_context:
@@ -360,7 +362,11 @@ class Session:
 
         # Validate decision
         if decision.action == Action.RESPOND and decision.response is None:
-            self._add_event("error", "RESPOND action requires a response, but none was provided.")
+            self._add_event(
+                "error",
+                "RESPOND action requires a response, but none was provided.",
+                decision,
+            )
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
@@ -368,7 +374,11 @@ class Session:
                 verbose=verbose,
             )
         if decision.action == Action.MOVE and decision.step_id is None:
-            self._add_event("error", "MOVE action requires a step_id, but none was provided.")
+            self._add_event(
+                "error",
+                "MOVE action requires a step_id, but none was provided.",
+                decision,
+            )
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
@@ -377,7 +387,9 @@ class Session:
             )
         if decision.action == Action.TOOL_CALL and decision.tool_call is None:
             self._add_event(
-                "error", "TOOL_CALL action requires a tool_call, but none was provided."
+                "error",
+                "TOOL_CALL action requires a tool_call, but none was provided.",
+                decision,
             )
             return self.next(
                 no_errors=no_errors + 1,
@@ -390,7 +402,7 @@ class Session:
 
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action == Action.RESPOND:
-            self._add_event(self.name, str(decision.response))
+            self._add_event(self.name, str(decision.response), decision)
             res = Response(decision=decision)
             if verbose:
                 pp_response(res)
@@ -407,20 +419,25 @@ class Session:
                     self._add_event(
                         "tool",
                         f"Tool {tool_name} executed successfully with args {tool_kwargs}.\nResults: {tool_results}",
+                        decision,
                     )
                 except Exception as e:
-                    self._add_event("tool", f"Running tool {tool_name} with args {tool_kwargs}")
+                    self._add_event(
+                        "tool",
+                        f"Running tool {tool_name} with args {tool_kwargs}",
+                        decision,
+                    )
                     raise e
                 log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
                 _error = e
-                self._add_event("fallback", str(e))
+                self._add_event("fallback", str(e), decision)
             except InvalidArgumentsError as e:
                 _error = e
-                self._add_event("error", str(e))
+                self._add_event("error", str(e), decision)
             except Exception as e:
                 _error = e
-                self._add_event("error", str(e))
+                self._add_event("error", str(e), decision)
 
             res = Response(decision=decision, tool_output=tool_results)
             if verbose:
@@ -463,6 +480,7 @@ class Session:
                 self._add_event(
                     "error",
                     f"Invalid route: {decision.step_id} not in {allowed}",
+                    decision,
                 )
                 _error = ValueError(f"Invalid route: {decision.step_id} not in {allowed}")
             res = Response(decision=decision)
@@ -495,7 +513,7 @@ class Session:
                     self.state_machine.current_flow = None
                     self.state_machine.flow_context = None
 
-            self._add_event("end", "Session ended.")
+            self._add_event("end", "Session ended.", decision)
             res = Response(decision=decision)
             if verbose:
                 pp_response(res)
@@ -504,6 +522,7 @@ class Session:
             self._add_event(
                 "error",
                 f"Unknown action: {decision.action}. Please check the action type.",
+                decision,
             )
             return self.next(
                 no_errors=no_errors + 1,

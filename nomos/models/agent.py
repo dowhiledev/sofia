@@ -271,6 +271,7 @@ class Event(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     type: str
     content: str
+    decision: Optional["Decision"] = None
 
     def __str__(self) -> str:
         return f"[{self.type.title()}] {self.content}"
@@ -313,9 +314,7 @@ class FlowState(BaseModel):
 
     flow_id: str
     flow_context: "FlowContext"
-    flow_memory_context: List[Union[Event, Message, Summary, StepIdentifier]] = Field(
-        default_factory=list
-    )
+    flow_memory_context: List[Union[Event, Summary, StepIdentifier]] = Field(default_factory=list)
 
 
 class State(BaseModel):
@@ -323,7 +322,7 @@ class State(BaseModel):
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
     current_step_id: str
-    history: List[Union[Summary, Event, Message, StepIdentifier]] = Field(default_factory=list)
+    history: List[Union[Summary, Event, StepIdentifier]] = Field(default_factory=list)
     flow_state: Optional[FlowState] = None
 
 

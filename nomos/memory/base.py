@@ -4,7 +4,7 @@ import os
 import pickle
 from typing import List, Union
 
-from nomos.models.agent import Event, Message, StepIdentifier, Summary
+from nomos.models.agent import Event, StepIdentifier, Summary
 
 
 class Memory:
