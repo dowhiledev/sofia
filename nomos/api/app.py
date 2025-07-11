@@ -15,10 +15,10 @@ from fastapi.staticfiles import StaticFiles
 from nomos.api.agent import agent
 from nomos.api.db import init_db
 from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
-from nomos.api.session_store import SessionStore, create_session_store
-from nomos.api.yaml_to_mermaid import generate_config_json, parse_yaml_config
+from nomos.api.sessions import SessionStore, create_session_store
 from nomos.models.agent import Message as FlowMessage
 from nomos.models.agent import StepIdentifier, Summary
+from nomos.utils.yml2mm import generate_config_json, parse_yaml_config
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")

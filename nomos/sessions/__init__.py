@@ -8,8 +8,8 @@ from redis.asyncio import Redis
 from ..api.db import get_session
 from ..config import SessionConfig, SessionStoreType
 from .base import SessionStoreBase
-from .memory_store import InMemorySessionStore
-from .production_store import ProductionSessionStore
+from .default import InMemorySessionStore
+from .prod import ProdSessionStore
 
 
 class SessionStoreFactory:
@@ -18,13 +18,13 @@ class SessionStoreFactory:
         config = config or SessionConfig.from_env()
         if config.store_type == SessionStoreType.PRODUCTION:
             db = await get_session()
-            redis = None
-            if config.redis_url:
-                redis = Redis.from_url(config.redis_url)
-            kafka_producer = None
-            if config.events_enabled and config.kafka_brokers:
-                kafka_producer = KafkaProducer(bootstrap_servers=config.kafka_brokers.split(","))
-            return ProductionSessionStore(
+            redis = Redis.from_url(config.redis_url) if config.redis_url else None
+            kafka_producer = (
+                KafkaProducer(bootstrap_servers=config.kafka_brokers.split(","))
+                if config.events_enabled and config.kafka_brokers
+                else None
+            )
+            return ProdSessionStore(
                 db=db,
                 redis=redis,
                 cache_ttl=config.cache_ttl,
@@ -37,6 +37,6 @@ class SessionStoreFactory:
 __all__ = [
     "SessionStoreFactory",
     "InMemorySessionStore",
-    "ProductionSessionStore",
+    "ProdSessionStore",
     "SessionStoreBase",
 ]

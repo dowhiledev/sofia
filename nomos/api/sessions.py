@@ -8,7 +8,7 @@ from nomos.types import Session as AgentSession
 
 from ..config import SessionConfig
 from ..models.session import Session
-from ..session_stores import SessionStoreBase, SessionStoreFactory
+from ..sessions import SessionStoreBase, SessionStoreFactory
 
 
 class SessionStore(SessionStoreBase):

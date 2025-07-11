@@ -21,10 +21,10 @@ from ..events import (
 from ..models.agent import State
 from ..models.session import Session
 from .base import SessionStoreBase
-from .memory_store import InMemorySessionStore
+from .default import InMemorySessionStore
 
 
-class ProductionSessionStore(SessionStoreBase):
+class ProdSessionStore(SessionStoreBase):
     """PostgreSQL + Redis backed session store."""
 
     def __init__(
