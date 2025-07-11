@@ -99,7 +99,7 @@ class MCPServer(BaseModel):
         """
         if not Client:
             raise ImportError("fastmcp is not installed. Please install it to use MCPServer.")
-        
+
         client = Client(self.url_path)
         tool_models = []
         async with client:
@@ -147,7 +147,7 @@ class MCPServer(BaseModel):
         """
         if not Client:
             raise ImportError("fastmcp is not installed. Please install it to use MCPServer.")
-        
+
         client = Client(self.url_path)
         params = kwargs.copy() if kwargs else {}
         async with client:

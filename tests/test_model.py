@@ -98,7 +98,6 @@ class TestMCPServer:
         assert result == [call_tool_result.text]
 
 
-
 class TestTool:
     @patch("nomos.models.tool.MCPServer.get_tools")
     def test_from_mcp_server(self, mock_get_tools):
