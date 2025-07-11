@@ -1,5 +1,6 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
+import asyncio
 import os
 import pickle
 import uuid
@@ -110,6 +111,9 @@ class Session:
         )
         self.state_machine.load_state(state)
 
+        # Optional event emitter used for analytics
+        self.event_emitter: Any = None
+
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -122,6 +126,10 @@ class Session:
     def memory(self) -> Memory:
         """Get the session memory."""
         return self.state_machine.memory
+
+    def set_event_emitter(self, emitter: Any) -> None:
+        """Attach an event emitter to this session."""
+        self.event_emitter = emitter
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""
@@ -253,7 +261,31 @@ class Session:
         else:
             # Only update session memory when not in a flow
             self.memory.add(event_obj)
+
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type=event_type,
+                    data={"content": content},
+                    decision=decision,
+                )
+                # Use create_task but don't await to avoid blocking
+                # Add error handling for the task
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit event: {exc}")
         log_debug(f"{event_type.title()} added: {content}")
+
+    def _handle_event_emission_error(self, task: asyncio.Task) -> None:
+        """Handle errors from event emission tasks."""
+        try:
+            task.result()  # This will raise any exception that occurred
+        except Exception as exc:
+            log_error(f"Event emission failed: {exc}")
 
     def _get_next_decision(
         self, decision_constraints: Optional[DecisionConstraints] = None
@@ -537,6 +569,21 @@ class Session:
         else:
             # Only update session memory when not in a flow
             self.memory.add(step_identifier)
+
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type="step",
+                    data={"step_id": step_identifier.step_id},
+                )
+                # Use create_task but add error handling
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit step event: {exc}")
 
         log_debug(f"Step identifier added: {step_identifier.step_id}")
 
