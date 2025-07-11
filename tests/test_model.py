@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastmcp.exceptions import ToolError
 
 from nomos.models.mcp import MCPServer
 from nomos.models.tool import Tool
