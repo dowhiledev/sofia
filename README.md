@@ -11,7 +11,7 @@
 [![codecov](https://codecov.io/gh/dowhiledev/nomos/graph/badge.svg?token=MXRK9HGE5R&style=flat-square)](https://codecov.io/gh/dowhiledev/nomos)
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
-[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base?style=flat-square)](https://hub.docker.com/r/chandralegend/nomos-base)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-nomos-blue?style=flat-square)](https://github.com/dowhiledev/nomos/pkgs/container/nomos)
 [![Open Issues](https://img.shields.io/github/issues-raw/dowhiledev/nomos?style=flat-square)](https://github.com/dowhiledev/nomos/issues)
 
 </div>
@@ -59,7 +59,7 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 |-----------|-------------|------|
 | **Playground** | Drag-and-drop flow designer for rapid prototyping | [Try it live →](https://nomos-builder.vercel.app/) |
 | **TypeScript SDK** | Full-featured client library for web and Node.js | [Documentation →](support/ts-sdk/README.md) |
-| **Docker Images** | Pre-configured containers with Redis, PostgreSQL support | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
+| **Docker Images** | Pre-configured containers with Redis, PostgreSQL support (GitHub Packages + Docker Hub) | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
 | **CLI Tools** | Complete toolkit: `init`, `run`, `serve`, `test`, `schema` | [CLI Reference →](docs/md/cli-usage.md) |
 
 ## Key Features

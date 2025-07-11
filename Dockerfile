@@ -64,7 +64,7 @@ USER nomos
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import nomos; print('Nomos is healthy')" || exit 1
+    CMD python -c "import nomos; print('Nomos is healthy'); exit(0)" || exit 1
 
 # Expose default port for the server
 EXPOSE 8000
