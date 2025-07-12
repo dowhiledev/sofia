@@ -203,12 +203,13 @@ class LLMBase:
         history = [
             steps[item.step_id] if isinstance(item, StepIdentifier) else item for item in history
         ]
+        _persona = current_step.persona or persona or DEFAULT_PERSONA.strip()
         messages = self.get_messages(
             current_step=current_step,
             tools=tools,
             history=history,
             system_message=(system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip()),
-            persona=persona if persona else DEFAULT_PERSONA.strip(),
+            persona=_persona,
             max_examples=max_examples,
             embedding_model=embedding_model,
         )
