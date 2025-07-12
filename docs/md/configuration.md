@@ -254,6 +254,20 @@ max_errors: 3  # Maximum consecutive errors before stopping
 max_iter: 5   # Maximum iterations per interaction
 ```
 
+### Session Store Configuration
+
+You can configure how sessions are stored by adding a `session` block to your configuration YAML. By default, sessions are kept in memory. To use PostgreSQL with Redis caching and Kafka event streaming:
+
+```yaml
+session:
+  store_type: production
+  database_url: postgresql+asyncpg://user:pass@postgres/dbname
+  redis_url: redis://redis:6379/0
+  kafka_brokers: kafka:9092
+  kafka_topic: session_events
+  events_enabled: true
+```
+
 ## Environment Variables
 
 Common environment variables for NOMOS agents:

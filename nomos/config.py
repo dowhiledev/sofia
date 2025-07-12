@@ -1,11 +1,14 @@
 """AgentConfig class for managing agent configurations."""
 
+from __future__ import annotations
+
 import importlib
 import importlib.util
 import os
+from enum import Enum
 from typing import Callable, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 from .llms import LLMBase, LLMConfig, OpenAI
@@ -14,6 +17,37 @@ from .models.agent import Step
 from .models.flow import FlowConfig
 from .models.tool import ToolDef, ToolWrapper
 from .utils.utils import convert_camelcase_to_snakecase
+
+
+class SessionStoreType(str, Enum):
+    MEMORY = "memory"
+    PRODUCTION = "production"
+
+
+class SessionConfig(BaseModel):
+    store_type: SessionStoreType = SessionStoreType.MEMORY
+    default_ttl: int = Field(3600, description="Default session TTL")
+    cache_ttl: int = Field(3600, description="Cache TTL for production store")
+    database_url: Optional[str] = None
+    redis_url: Optional[str] = None
+    kafka_brokers: Optional[str] = None
+    kafka_topic: str = "session_events"
+    events_enabled: bool = False
+
+    @classmethod
+    def from_env(cls) -> "SessionConfig":
+        import os
+
+        return cls(
+            store_type=SessionStoreType(os.getenv("SESSION_STORE", "memory")),
+            default_ttl=int(os.getenv("SESSION_DEFAULT_TTL", "3600")),
+            cache_ttl=int(os.getenv("SESSION_CACHE_TTL", "3600")),
+            database_url=os.getenv("DATABASE_URL"),
+            redis_url=os.getenv("REDIS_URL"),
+            kafka_brokers=os.getenv("KAFKA_BROKERS"),
+            kafka_topic=os.getenv("KAFKA_TOPIC", "session_events"),
+            events_enabled=os.getenv("SESSION_EVENTS", "false").lower() == "true",
+        )
 
 
 class ServerConfig(BaseModel):
@@ -178,6 +212,9 @@ class AgentConfig(BaseSettings):
     server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
+    # Optional session store configuration
+    session: Optional[SessionConfig] = None
+
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
     @classmethod
@@ -199,6 +236,14 @@ class AgentConfig(BaseSettings):
                 for k, v in server_data.items()
             }
             data["server"] = expanded
+
+        session_data = data.get("session") or data.get("session_store")
+        if isinstance(session_data, dict):
+            expanded = {
+                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
+                for k, v in session_data.items()
+            }
+            data["session"] = expanded
 
         return cls(**data)
 
@@ -230,4 +275,4 @@ class AgentConfig(BaseSettings):
         return self.embedding_model.get_llm() if self.embedding_model else None
 
 
-__all__ = ["AgentConfig", "ServerConfig"]
+__all__ = ["AgentConfig", "ServerConfig", "SessionConfig"]

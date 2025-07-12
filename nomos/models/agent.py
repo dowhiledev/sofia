@@ -2,7 +2,7 @@
 
 import heapq
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -317,7 +317,7 @@ class Step(BaseModel):
 class Event(BaseModel):
     """An event stored in memory."""
 
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     type: str
     content: str
     decision: Optional["Decision"] = None

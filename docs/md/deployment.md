@@ -2,6 +2,9 @@
 
 NOMOS provides multiple deployment options to suit different environments and requirements.
 
+> [!TIP]
+> For details on how Docker images are automatically built and published, see the [Docker Publishing Guide](../dev-deploy/docker-publishing.md).
+
 ## CLI Deployment
 
 ### Quick Deployment with CLI
@@ -23,11 +26,26 @@ See the [CLI Usage Guide](cli-usage.md) for complete deployment options.
 
 ## Docker Base Image
 
-NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/nomos-base`.
+NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available from multiple registries:
+
+- **GitHub Packages** (Recommended): `ghcr.io/dowhiledev/nomos:latest`
+- **Docker Hub**: `chandralegend/nomos-base:latest`
 
 ### Using the Base Image
 
-1. Create a Dockerfile:
+1. Create a Dockerfile using GitHub Packages (recommended):
+
+```dockerfile
+FROM ghcr.io/dowhiledev/nomos:latest
+
+# Copy your config file
+COPY config.agent.yaml /app/config.agent.yaml
+
+# Copy your tools
+COPY tools.py /app/src/tools/
+```
+
+Or use Docker Hub:
 
 ```dockerfile
 FROM chandralegend/nomos-base:latest
@@ -45,6 +63,18 @@ COPY tools.py /app/src/tools/
 docker build -t my-nomos-agent .
 docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-nomos-agent
 ```
+
+### Available Image Tags
+
+- `latest` - Latest stable release from main branch
+- `v1.0.0`, `v1.1.0`, etc. - Specific version tags
+- `main` - Latest development build from main branch
+
+### Multi-Architecture Support
+
+The GitHub Packages images support multiple architectures:
+- `linux/amd64` (x86_64)
+- `linux/arm64` (ARM64, Apple Silicon)
 
 ## Environment Variables
 
@@ -68,6 +98,8 @@ The base image supports configuration via environment variables:
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 | `NOMOS_LOG_LEVEL` | Logging level (`DEBUG`, `INFO`, etc.) | No (default: `INFO`) |
 | `NOMOS_ENABLE_LOGGING` | Enable logging (`true`/`false`) | No (default: `false`) |
+| `KAFKA_BROKERS` | Kafka broker addresses | No |
+| `KAFKA_TOPIC` | Kafka topic for events | No (default: `session_events`) |
 
 ## Persistent Storage and Session Management
 
@@ -161,9 +193,11 @@ services:
       - ENABLE_TRACING=true
       - ELASTIC_APM_SERVER_URL=${APM_SERVER_URL}
       - ELASTIC_APM_TOKEN=${APM_TOKEN}
+      - KAFKA_BROKERS=kafka:9092
     depends_on:
       - postgres
       - redis
+      - kafka
 
   postgres:
     image: postgres:15
@@ -178,6 +212,19 @@ services:
     image: redis:7-alpine
     volumes:
       - redis_data:/data
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
 volumes:
   postgres_data:
