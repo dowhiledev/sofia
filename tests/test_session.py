@@ -6,6 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from nomos.config import SessionConfig, SessionStoreType
+from nomos.core import Session as AgentSession
+from nomos.models.agent import Event, State
+from nomos.sessions.base import SessionStoreBase
+from nomos.sessions.default import InMemorySessionStore
+
 # Set dummy environment variables to avoid OpenAI API key requirement
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
@@ -13,12 +19,6 @@ os.environ.setdefault("OPENAI_API_KEY", "test-key")
 test_dir = os.path.dirname(__file__)
 config_source = os.path.join(test_dir, "fixtures", "config.agent.yaml")
 os.environ["CONFIG_PATH"] = config_source
-
-from nomos.config import SessionConfig, SessionStoreType
-from nomos.core import Session as AgentSession
-from nomos.models.agent import Event, State
-from nomos.sessions.base import SessionStoreBase
-from nomos.sessions.default import InMemorySessionStore
 
 # Mock the imports that depend on config files and OpenAI
 with patch("nomos.llms.openai.OpenAI"), patch("nomos.api.agent.agent"):
@@ -241,7 +241,7 @@ class TestSessionStoreFactory:
             mock_store = MockProdStore.return_value
             mock_store.cache_ttl = 1800
 
-            store = await SessionStoreFactory.create_store(config)
+            await SessionStoreFactory.create_store(config)
 
             # Verify database connection was established
             mock_get_session.assert_called_once()
@@ -320,7 +320,7 @@ class TestSessionStoreFactory:
         mock_db = AsyncMock()
         mock_get_session.return_value = mock_db
 
-        with patch("nomos.sessions.ProdSessionStore") as MockProdStore:
+        with patch("nomos.sessions.ProdSessionStore"):
             store = await SessionStoreFactory.create_store()
             assert store is not None
 
@@ -390,7 +390,7 @@ class TestSessionStoreFactory:
 
         # The actual implementation should handle this gracefully
         try:
-            with patch("nomos.sessions.ProdSessionStore") as MockProdStore:
+            with patch("nomos.sessions.ProdSessionStore"):
                 store = await SessionStoreFactory.create_store(config)
                 assert store is not None
         except Exception as e:
@@ -545,7 +545,7 @@ class TestProdSessionStore:
     async def test_get_from_redis_cache(self, store, sample_state):
         """Test retrieving session from Redis cache."""
         session_id = "test_session"
-        state_json = json.dumps(sample_state.model_dump(mode="json"))
+        json.dumps(sample_state.model_dump(mode="json"))
 
         # Mock the store's get method to simulate Redis cache hit
         store.get.return_value = MagicMock()
@@ -604,7 +604,7 @@ class TestProdSessionStore:
         # Mock Redis error by making get return None
         store.get.return_value = None
 
-        result = await store.get(session_id)
+        await store.get(session_id)
         # Will be None since we're mocking it to return None
 
     @pytest.mark.asyncio
