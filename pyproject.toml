@@ -73,7 +73,7 @@ addopts = "-ra -q --cov=nomos --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]
-lint.select = ["I"]
+lint.extend-select = ["I"]
 exclude = ["cookbook/"]
 line-length = 100
 

@@ -1,13 +1,15 @@
 """Tests for the API endpoints and functionality."""
 
-import json
 import os
 import shutil
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
+
+from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
+from nomos.core import Session as AgentSession
+from nomos.models.agent import Event, State
 
 # Set dummy environment variables to avoid OpenAI API key requirement
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
@@ -37,10 +39,6 @@ def teardown_module():
 # Mock the OpenAI import and agent to avoid config file dependency
 with patch("nomos.llms.openai.OpenAI"), patch("nomos.api.agent.agent"):
     from nomos.api.app import app
-
-from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
-from nomos.core import Session as AgentSession
-from nomos.models.agent import Event, State
 
 
 @pytest.fixture
@@ -398,7 +396,7 @@ class TestErrorHandling:
 
         # The API currently lets exceptions bubble up, so we expect the raw exception
         try:
-            response = client.post("/session/test/message", json={"content": "Hello"})
+            client.post("/session/test/message", json={"content": "Hello"})
             # If we get here, the request succeeded unexpectedly
             assert False, "Expected exception to be raised"
         except Exception as e:
@@ -414,7 +412,7 @@ class TestErrorHandling:
 
         # The API currently lets exceptions bubble up, so we expect the raw exception
         try:
-            response = client.post("/session")
+            client.post("/session")
             # If we get here, the request succeeded unexpectedly
             assert False, "Expected exception to be raised"
         except Exception as e:
@@ -446,7 +444,7 @@ class TestMiddleware:
 
     def test_cors_headers(self, client):
         """Test CORS headers are properly set."""
-        response = client.options("/config")
+        client.options("/config")
         # Check for CORS headers if CORS middleware is configured
         # This depends on the actual CORS configuration
 

@@ -25,7 +25,7 @@ class KafkaEventEmitter:
             payload = json.dumps(event.model_dump(mode="json"), ensure_ascii=False).encode("utf-8")
 
             # Send to Kafka with proper error handling
-            future = await loop.run_in_executor(None, self.producer.send, self.topic, payload)
+            await loop.run_in_executor(None, self.producer.send, self.topic, payload)
 
             # Log successful emission
             logger.debug(
