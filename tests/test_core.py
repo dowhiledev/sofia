@@ -3,12 +3,13 @@
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
 from nomos.config import AgentConfig, ToolsConfig
 from nomos.core import Agent, Session
+from nomos.llms.base import LLMBase
 from nomos.models.agent import (
     Action,
     Decision,
@@ -17,6 +18,7 @@ from nomos.models.agent import (
     Route,
     Step,
     StepIdentifier,
+    StepOverrides,
     Summary,
 )
 from nomos.models.tool import ArgDef, MCPServer, Tool, ToolDef, ToolWrapper
@@ -1315,3 +1317,58 @@ class TestDeferredTools:
 
         # make sure that tool_ids are still the same
         assert current_step.tool_ids == []
+
+
+class TestStepOverrides:
+    """Test StepOverrides functionality."""
+
+    def test_step_persona(self, mock_llm):
+        """Test Step persona overrides session persona."""
+        default_persona = "You are a helpful assistant"
+        custom_persona = "You are an AI Engineer"
+        step_overrides = StepOverrides(persona=custom_persona)
+        step = Step(
+            step_id="step1", name="test_step", description="init step", overrides=step_overrides
+        )
+        config = AgentConfig(
+            name="agent",
+            persona=default_persona,
+            steps=[step],
+            start_step_id="step1",
+            max_examples=2,
+        )
+        agent = Agent.from_config(config=config, llm=mock_llm)
+
+        session = agent.create_session()
+        session.persona = default_persona
+        decision_model = agent.llm._create_decision_model(
+            current_step=session.current_step,
+            current_step_tools=tuple(session._get_current_step_tools()),
+        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
+        agent.llm.set_response(response)
+
+        session.next("hi")
+        assert custom_persona in session.llm.messages_received[0].content
+        assert default_persona not in session.llm.messages_received[0].content
+
+    def test_get_step_llm(self, mock_llm):
+        """Test getting the step LLM."""
+        step = Step(step_id="step1", name="test_step", description="init step")
+        config = AgentConfig(
+            name="agent",
+            steps=[step],
+            start_step_id="step1",
+            max_examples=2,
+        )
+        agent = Agent.from_config(config=config, llm=mock_llm)
+
+        session = agent.create_session()
+        llm = session._get_step_llm(step=step)
+        assert llm == mock_llm
+
+        step_mock = MagicMock(spec=LLMBase)
+        with patch.object(Step, "llm", new_callable=PropertyMock) as step_llm:
+            step_llm.return_value = step_mock
+            llm = session._get_step_llm(step=step)
+            assert llm == step_mock

@@ -238,6 +238,14 @@ class Session:
         self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
+    def _get_step_llm(self, step: Step) -> LLMBase:
+        """
+        Get the LLM to use for the given step.
+
+        :return: LLMBase instance for the current step.
+        """
+        return step.llm or self.llm
+
     def _add_event(
         self, event_type: str, content: str, decision: Optional[Decision] = None
     ) -> None:
@@ -263,7 +271,8 @@ class Session:
 
         :return: The decision made by the LLM.
         """
-        _decision_model = self.llm._create_decision_model(
+        llm = self._get_step_llm(self.current_step)
+        _decision_model = llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
             constraints=decision_constraints,
@@ -277,7 +286,8 @@ class Session:
             flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
-        _decision = self.llm._get_output(
+
+        _decision = llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
@@ -290,7 +300,7 @@ class Session:
         )
 
         # Convert to a Decision model
-        decision = self.llm._create_decision_from_output(output=_decision)
+        decision = llm._create_decision_from_output(output=_decision)
         log_debug(f"Model decision: {decision}")
         return decision
 

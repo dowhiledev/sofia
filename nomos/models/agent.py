@@ -16,7 +16,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..utils.utils import create_base_model, create_enum
 
@@ -96,6 +96,34 @@ class DecisionExample(BaseModel):
         return self._ctx_embedding
 
 
+class StepOverrides(BaseModel):
+    """
+    Represents overrides for a step's configuration.
+
+    Attributes:
+        persona (Optional[str]): Override for the persona.
+        llm (Optional[LLMConfig]): Override for the LLM configuration.
+    """
+
+    persona: Optional[str] = None
+    llm: Optional[Any] = None
+
+    @field_validator("llm")
+    def validate_llm(cls, value: Any) -> Any:
+        """
+        Validate the LLM configuration.
+
+        :param value: The LLM configuration to validate.
+        :return: The validated LLM configuration.
+        """
+        if isinstance(value, dict):
+            from ..llms import LLMConfig
+
+            return LLMConfig.model_validate(value)
+        else:
+            raise ValueError("LLM override must be a dictionary or an instance of LLMConfig")
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -122,6 +150,7 @@ class Step(BaseModel):
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
     examples: Optional[List[DecisionExample]] = None
+    overrides: Optional[StepOverrides] = None
 
     def __hash__(self) -> int:
         """Get the hash of the step based on its ID."""
@@ -175,6 +204,26 @@ class Step(BaseModel):
         :return: List of target step IDs.
         """
         return [route.target for route in self.routes]
+
+    @property
+    def persona(self) -> Optional[str]:
+        """
+        Get the persona override for this step.
+
+        :return: Persona string if available, otherwise None.
+        """
+        return self.overrides.persona if self.overrides else None
+
+    @property
+    def llm(self) -> Any:
+        """
+        Get the LLM override for this step.
+
+        :return: LLM configuration if available, otherwise None.
+        """
+        if self.overrides and self.overrides.llm:
+            return self.overrides.llm.get_llm()
+        return None
 
     @property
     def tool_ids(self) -> List[str]:

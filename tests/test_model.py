@@ -3,6 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastmcp.exceptions import ToolError
 
+from nomos.llms import LLMConfig
+from nomos.models.agent import Step, StepOverrides
 from nomos.models.tool import MCPServer, Tool, ToolCallError
 from nomos.utils.utils import create_base_model
 
@@ -132,3 +134,37 @@ class TestTool:
         assert tools[0].name == f"{server.name}/{tool_name}"
         assert tools[0].description == tool_description
         assert tools[0].parameters == tool_params
+
+
+class TestStepOverrides:
+    """Test Step model overrides."""
+
+    def test_empty_step_persona(self):
+        """Test Step persona property."""
+        step = Step(name="test_step", step_id="id", description="A test step")
+        assert step.persona == None
+
+    def test_step_persona(self):
+        """Test Step persona property with overrides."""
+        overrides = StepOverrides(persona="test_persona")
+        step = Step(name="test_step", step_id="id", description="A test step", overrides=overrides)
+        assert step.persona == "test_persona"
+
+    def test_step_empty_llm(self):
+        """Test Step llm property."""
+        step = Step(name="test_step", step_id="id", description="A test step")
+        assert step.llm == None
+
+    def test_step_llm(self):
+        """Test Step llm property with overrides."""
+        llm_dict = {
+            "model": "gpt-3.5-turbo",
+            "provider": "openai",
+            "kwargs": {
+                "api_key": "abc123",
+            },
+        }
+        overrides = StepOverrides(llm=llm_dict)
+        step = Step(name="test_step", step_id="id", description="A test step", overrides=overrides)
+        assert step.llm.model == llm_dict["model"]
+        assert step.llm.__provider__ == llm_dict["provider"]
