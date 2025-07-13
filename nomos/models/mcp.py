@@ -4,7 +4,7 @@ import asyncio
 import enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, SecretStr
 
 from ..utils.misc import join_urls
 from ..utils.utils import create_base_model, parse_type
@@ -51,6 +51,7 @@ class MCPServer(BaseModel):
     url: HttpUrl
     path: Optional[str] = None
     transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
+    auth: Optional[SecretStr] = None
 
     @property
     def id(self) -> str:
@@ -100,7 +101,7 @@ class MCPServer(BaseModel):
         if not Client:
             raise ImportError("fastmcp is not installed. Please install it to use MCPServer.")
 
-        client = Client(self.url_path)
+        client = Client(self.url_path, auth=self.auth.get_secret_value() if self.auth else None)
         tool_models = []
         async with client:
             tools = await client.list_tools()
@@ -148,7 +149,7 @@ class MCPServer(BaseModel):
         if not Client:
             raise ImportError("fastmcp is not installed. Please install it to use MCPServer.")
 
-        client = Client(self.url_path)
+        client = Client(self.url_path, auth=self.auth.get_secret_value() if self.auth else None)
         params = kwargs.copy() if kwargs else {}
         async with client:
             res = await client.call_tool(tool_name, params)
