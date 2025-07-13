@@ -112,3 +112,7 @@ For detailed information, check out our comprehensive guides:
 - **[CLI Reference](docs/md/cli-usage.md)**: Complete command-line interface documentation for development and deployment.
 
 Join the NOMOS community! For roadmap, support, contributing guidelines, and more, see our [Community Guide](docs/md/community.md).
+
+Connect with other NOMOS developers and get real-time support:
+
+<iframe src="https://discord.com/widget?id=1393886830553731183&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
