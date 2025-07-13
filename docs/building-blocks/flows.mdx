@@ -86,8 +86,8 @@ steps:
 
 # Enhanced flows configuration
 flows:
-  - flow_id: order_management
-    description: "Complete order processing workflow"
+  - flow_id: order_management    # Can also use 'id'
+    description: "Complete order processing workflow"  # Can also use 'desc'
     enters:
       - order_taking
     exits:
@@ -249,3 +249,23 @@ Flows automatically handle context transfer when users move between different wo
     Always provide clear exit paths from each flow
   </Card>
 </CardGroup>
+
+## Configuration Validation
+
+Use the `nomos validate` command to check your flow configuration:
+
+```bash
+nomos validate config.agent.yaml --verbose
+```
+
+This validates:
+- Flow ID uniqueness
+- Entry/exit step references
+- Component configuration
+- Field naming compatibility (supports both `id`/`flow_id` and `desc`/`description`)
+
+<Note>
+**Field Naming Flexibility**
+
+NOMOS supports both compact (`id`, `desc`) and descriptive (`flow_id`, `description`) field names for flows. You can use either convention consistently in your configuration.
+</Note>

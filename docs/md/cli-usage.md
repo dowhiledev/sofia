@@ -9,6 +9,7 @@ The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your 
 - [`nomos train`](#training-mode) - Interactively refine agent decisions
 - [`nomos serve`](#production-deployment) - Deploy agent with Docker
 - [`nomos test`](#testing) - Run agent tests
+- [`nomos validate`](#validate-configuration) - Validate agent configuration
 - [`nomos schema`](#generate-yaml-schema) - Export JSON schema for your config
 - `nomos --version` - Display CLI version
 
@@ -222,4 +223,48 @@ Reference the schema in your YAML file (works with VS Code YAML extension):
 
 ```yaml
 # yaml-language-server: $schema=./agent.schema.json
+```
+
+## Validate Configuration
+
+Validate your agent configuration file for syntax errors and best practices:
+
+```bash
+nomos validate config.agent.yaml
+```
+
+### Options
+
+- `--verbose, -v`: Show detailed validation information including configuration details and warnings
+
+### Examples
+
+```bash
+# Basic validation
+nomos validate config.agent.yaml
+
+# Detailed validation with recommendations
+nomos validate config.agent.yaml --verbose
+
+# Validate custom config file
+nomos validate my-custom-config.yaml -v
+```
+
+The validate command checks for:
+
+- **Syntax Errors**: YAML syntax and required fields
+- **Configuration Issues**: Missing steps, unreachable steps, invalid references
+- **Best Practices**: Recommendations for optimal agent configuration
+- **Field Compatibility**: Supports both new and legacy field naming conventions
+
+### Validation Output
+
+```bash
+✓ Configuration is valid!
+
+Warnings:
+• No LLM configuration specified - will use default OpenAI settings
+
+Recommendations:
+• Consider adding a persona to give your agent more character
 ```
