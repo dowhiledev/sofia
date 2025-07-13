@@ -68,8 +68,8 @@ steps:
 
 # Enhanced flows configuration
 flows:
-  - flow_id: take_coffee_order
-    description: "Complete coffee ordering process"
+  - id: take_coffee_order
+    desc: "Complete coffee ordering process"
     enters:
       - take_coffee_order
     exits:
