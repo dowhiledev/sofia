@@ -53,6 +53,9 @@ serve = [
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "kafka-python>=2.2.15",
 ]
+cohere = [
+    "cohere>=5.16.1",
+]
 
 [dependency-groups]
 dev = [

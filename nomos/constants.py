@@ -45,6 +45,10 @@ LLM_CHOICES = {
         "provider": "huggingface",
         "model": "",
     },
+    "Cohere": {
+        "provider": "cohere",
+        "model": "command-a-03-2025",
+    },
 }
 
 TEMPLATES = {

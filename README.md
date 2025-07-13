@@ -60,7 +60,7 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 | **Playground** | Drag-and-drop flow designer for rapid prototyping | [Try it live →](https://nomos-builder.vercel.app/) |
 | **TypeScript SDK** | Full-featured client library for web and Node.js | [Documentation →](support/ts-sdk/README.md) |
 | **Docker Images** | Pre-configured containers with Redis, PostgreSQL support (GitHub Packages + Docker Hub) | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
-| **CLI Tools** | Complete toolkit: `init`, `run`, `serve`, `test`, `schema` | [CLI Reference →](docs/md/cli-usage.md) |
+| **CLI Tools** | Complete toolkit: `init`, `run`, `serve`, `test`, `validate`, `schema` | [CLI Reference →](docs/md/cli-usage.md) |
 
 ## Key Features
 
@@ -112,3 +112,5 @@ For detailed information, check out our comprehensive guides:
 - **[CLI Reference](docs/md/cli-usage.md)**: Complete command-line interface documentation for development and deployment.
 
 Join the NOMOS community! For roadmap, support, contributing guidelines, and more, see our [Community Guide](docs/md/community.md).
+
+[![Discord Banner 2](https://discord.com/api/guilds/1393886830553731183/widget.png?style=banner2)](https://discord.com/invite/2F4sD69w?utm_source=Discord%20Widget&utm_medium=Connect)
