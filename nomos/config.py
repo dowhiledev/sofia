@@ -11,7 +11,6 @@ from typing import Callable, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
-from .constants import DEFAULT_LLM_ID
 from .llms import LLMBase, LLMConfig
 from .memory import MemoryConfig
 from .models.agent import Step
@@ -259,20 +258,21 @@ class AgentConfig(BaseSettings):
         with open(file_path, "w") as file:
             yaml.dump(self.model_dump(mode="json"), file, sort_keys=False)
 
-    def get_llm(self, id: str = DEFAULT_LLM_ID) -> LLMBase:
+    def get_llm(self) -> Optional[Dict[str, LLMBase]]:
         """
         Get the appropriate LLM instance based on the configuration.
         :param id: ID of the LLM to retrieve.
 
         :return: An instance of the defined LLM integration.
         """
-        llm_dict = self.llm if isinstance(self.llm, dict) else {DEFAULT_LLM_ID: self.llm}  # type: ignore
-        try:
-            llm_config = llm_dict[id]
-        except KeyError:
-            raise ValueError(f"LLM with id '{id}' not found in the configuration.")
-        else:
-            return llm_config.get_llm() if llm_config else None  # type: ignore
+        if not self.llm:
+            return None
+        llm_dict = (
+            {llm_id: llm.get_llm() for llm_id, llm in self.llm.items()}
+            if isinstance(self.llm, dict)
+            else {"global": self.llm.get_llm()}
+        )  # type: ignore
+        return llm_dict
 
     def get_embedding_model(self) -> Optional[LLMBase]:
         """

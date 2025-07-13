@@ -7,7 +7,6 @@ import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .config import AgentConfig
-from .constants import DEFAULT_LLM_ID
 from .llms import LLMBase
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
@@ -41,7 +40,7 @@ class Session:
     def __init__(
         self,
         name: str,
-        llm: LLMBase,
+        llm: Union[LLMBase, Dict[str, LLMBase]],
         embedding_model: LLMBase,
         memory: Memory,
         steps: Dict[str, Step],
@@ -76,7 +75,7 @@ class Session:
         # Fixed
         self.session_id = state.session_id if state else f"{name}_{str(uuid.uuid4())}"
         self.name = name
-        self.llm = llm
+        self.llm_dict = llm if isinstance(llm, dict) else {"global": llm}
         self.steps = steps
         self.show_steps_desc = show_steps_desc
         self.system_message = system_message
@@ -246,28 +245,16 @@ class Session:
         self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
-    def _get_step_llm_id(self, step: Step) -> str:
+    @property
+    def llm(self) -> LLMBase:
         """
-        Get the LLM ID to use for the given step.
-
-        :return: LLM ID for the current step.
-        """
-        return step.llm or DEFAULT_LLM_ID
-
-    def get_llm(self, llm_id: str = DEFAULT_LLM_ID) -> LLMBase:
-        """
-        Get the LLM instance for the given ID.
-
-        :param llm_id: The ID of the LLM to retrieve.
+        Get the LLM instance.
         :return: The LLM instance.
         """
-
-        if self.config:
-            llm = self.config.get_llm(llm_id)
-            if not llm and llm_id == DEFAULT_LLM_ID:
-                llm = self.llm
-
-        return llm
+        llm_id = self.current_step.llm or "global"
+        if llm_id not in self.llm_dict:
+            log_error(f"LLM '{llm_id}' not found in session LLMs. Using default LLM.")
+        return self.llm_dict.get(llm_id, self.llm_dict["global"])
 
     def _add_event(
         self, event_type: str, content: str, decision: Optional[Decision] = None
@@ -318,9 +305,7 @@ class Session:
 
         :return: The decision made by the LLM.
         """
-        llm_id = self._get_step_llm_id(self.current_step)
-        llm = self.get_llm(llm_id)
-        _decision_model = llm._create_decision_model(
+        _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
             constraints=decision_constraints,
@@ -335,7 +320,7 @@ class Session:
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
 
-        _decision = llm._get_output(
+        _decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
@@ -348,7 +333,7 @@ class Session:
         )
 
         # Convert to a Decision model
-        decision = llm._create_decision_from_output(output=_decision)
+        decision = self.llm._create_decision_from_output(output=_decision)
         log_debug(f"Model decision: {decision}")
         return decision
 
@@ -619,7 +604,7 @@ class Agent:
 
     def __init__(
         self,
-        llm: LLMBase,
+        llm: Union[LLMBase, Dict[str, LLMBase]],
         name: str,
         steps: List[Step],
         start_step_id: str,
@@ -636,7 +621,7 @@ class Agent:
         """
         Initialize an Agent.
 
-        :param llm: LLMBase instance.
+        :param llm: LLMBase instance or dictionary of LLMs.
         :param name: Name of the agent.
         :param steps: List of Step objects.
         :param start_step_id: ID of the starting step.
@@ -661,8 +646,11 @@ class Agent:
         self.max_iter = max_iter
         self.config = config
         self.embedding_model = (
-            embedding_model or (config.get_embedding_model() if config else None) or self.llm
+            embedding_model
+            or (config.get_embedding_model() if config else None)
+            or (llm if isinstance(llm, LLMBase) else llm.get("global", None))
         )
+        assert self.embedding_model, "Embedding model must be provided or configured."
         self._setup_logging()
         self.flows = flows or (
             list(create_flows_from_config(config).flows.values())
@@ -720,26 +708,24 @@ class Agent:
     def from_config(
         cls,
         config: AgentConfig,
-        llm: Optional[LLMBase] = None,
+        llm: Optional[Union[LLMBase, Dict[str, LLMBase]]] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
     ) -> "Agent":
         """
         Create an Agent from an AgentConfig object.
 
-        :param llm: LLMBase instance.
+        :param llm: Optional LLMBase instance or dictionary of LLMs.
         :param config: AgentConfig instance.
         :param tools: List of tool callables.
         :return: Nomos instance.
         """
-        if not llm:
-            if not config.llm:
-                raise ValueError("No LLM provided. Please provide an LLM or a config with an LLM.")
-            llm = config.get_llm()
+        _llm = llm or config.get_llm()
+        assert _llm, "LLM must be provided either as a parameter or in the config."
 
         tools = tools or []
         tools.extend(config.tools.get_tools())
         return cls(
-            llm=llm,
+            llm=_llm,
             name=config.name,
             steps=config.steps,
             start_step_id=config.start_step_id,
@@ -773,6 +759,7 @@ class Agent:
             memory = (
                 self.config.memory.get_memory() if self.config and self.config.memory else Memory()
             )
+        assert self.embedding_model, "Embedding model must be provided or configured."
         return Session(
             name=self.name,
             llm=self.llm,
@@ -811,6 +798,7 @@ class Agent:
 
         memory = self.config.memory.get_memory() if self.config and self.config.memory else Memory()
 
+        assert self.embedding_model, "Embedding model must be provided or configured."
         session = Session(
             name=self.name,
             llm=self.llm,

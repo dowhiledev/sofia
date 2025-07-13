@@ -112,7 +112,7 @@ class StepOverrides(BaseModel):
     """
 
     persona: Optional[str] = None
-    llm: Optional[str] = None
+    llm: str = "global"
 
 
 class Step(BaseModel):
@@ -218,13 +218,13 @@ class Step(BaseModel):
         return self.overrides.persona if self.overrides else None
 
     @property
-    def llm(self) -> Optional[str]:
+    def llm(self) -> str:
         """
         Get the LLM override for this step.
 
         :return: LLM Id.
         """
-        return self.overrides.llm if self.overrides else None
+        return self.overrides.llm if self.overrides else "global"
 
     @property
     def tool_ids(self) -> List[str]:

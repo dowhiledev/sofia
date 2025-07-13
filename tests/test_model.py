@@ -135,7 +135,7 @@ class TestStepOverrides:
     def test_step_empty_llm(self):
         """Test Step llm property."""
         step = Step(name="test_step", step_id="id", description="A test step")
-        assert step.llm is None
+        assert step.llm == "global"
 
     def test_step_llm(self):
         """Test Step llm property with overrides."""

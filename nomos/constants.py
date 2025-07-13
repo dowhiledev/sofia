@@ -82,5 +82,3 @@ PRIMARY_COLOR = "cyan"
 SUCCESS_COLOR = "green"
 WARNING_COLOR = "yellow"
 ERROR_COLOR = "red"
-
-DEFAULT_LLM_ID = "global"
