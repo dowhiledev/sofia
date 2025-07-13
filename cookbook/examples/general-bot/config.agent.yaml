@@ -42,6 +42,8 @@ steps:
         condition: User wants to ask about current events
       - target: end
         condition: User wants to end the conversation
+    overrides:
+      llm: "expensive_llm"
 
   - step_id: science
     description: |
@@ -54,6 +56,11 @@ steps:
         condition: User asks about a different topic.
       - target: end
         condition: User wants to end the conversation
+    overrides:
+      persona: |
+        You are a knowledgeable science assistant. You explain scientific concepts clearly and accurately.
+        You provide examples and analogies to help users understand complex topics.
+        You encourage curiosity and further exploration of scientific subjects.
 
   - step_id: history
     description: |
@@ -147,5 +154,9 @@ steps:
       End the conversation on a positive and encouraging note.
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  global:
+    provider: openai
+    model: gpt-4o-mini
+  expensive_llm:
+    provider: openai
+    model: gpt-4o
