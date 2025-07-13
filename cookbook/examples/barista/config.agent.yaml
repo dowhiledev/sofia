@@ -8,19 +8,19 @@ start_step_id: start
 
 #  Steps for the Agent
 steps:
-  - step_id: start
-    description: |
+  - id: start
+    desc: |
       Greet the customer and ask how can I help them. (e.g., 'Hello! How can I help you today?')
       Use the `get_available_coffee_options` tool to get the available coffee options if you need to.
       If the customer presented a coffee preference themself, use the `get_available_coffee_options` tool to get the available coffee options and see whether its available in the available coffee options.
       Otherwise recommend the available coffee options to the customer.
       When the customer is ready to order, move to the `take_coffee_order` step.
-    available_tools:
+    tools:
       - get_available_coffee_options
-    routes:
-      - target: take_coffee_order
-        condition: Customer is ready to place a new order
-    examples:
+    paths:
+      - to: take_coffee_order
+        when: Customer is ready to place a new order
+    eg:
       - context: "Customer asked for coffee options"
         decision: "Call the `get_available_coffee_options` tool to get the available coffee options"
         visibility: "always"

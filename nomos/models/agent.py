@@ -54,11 +54,17 @@ class Route(BaseModel):
     target: str = Field(
         ...,
         description="Target step ID to move to when this route is taken.",
+        validation_alias="to",
+        serialization_alias="to",
     )
     condition: str = Field(
         ...,
         description="Condition that must be met to take this route.",
+        validation_alias="when",
+        serialization_alias="when",
     )
+
+    model_config = {"populate_by_name": True}
 
     def __str__(self) -> str:
         """Return a string representation of the route."""
@@ -113,15 +119,27 @@ class Step(BaseModel):
         get_available_routes() -> List[str]: Get the list of available route targets.
     """
 
-    step_id: str
-    description: str
-    routes: List[Route] = []
-    available_tools: List[str] = []
+    step_id: str = Field(..., validation_alias="id", serialization_alias="id")
+    description: str = Field(..., validation_alias="desc", serialization_alias="desc")
+    routes: List[Route] = Field(
+        default_factory=list,
+        validation_alias="paths",
+        serialization_alias="paths",
+    )
+    available_tools: List[str] = Field(
+        default_factory=list,
+        validation_alias="tools",
+        serialization_alias="tools",
+    )
     answer_model: Optional[Union[Dict[str, Dict[str, Any]], BaseModel]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
-    examples: Optional[List[DecisionExample]] = None
+    examples: Optional[List[DecisionExample]] = Field(
+        None, validation_alias="eg", serialization_alias="eg"
+    )
+
+    model_config = {"populate_by_name": True}
 
     def __hash__(self) -> int:
         """Get the hash of the step based on its ID."""
