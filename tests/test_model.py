@@ -124,7 +124,7 @@ class TestStepOverrides:
     def test_empty_step_persona(self):
         """Test Step persona property."""
         step = Step(name="test_step", step_id="id", description="A test step")
-        assert step.persona == None
+        assert step.persona is None
 
     def test_step_persona(self):
         """Test Step persona property with overrides."""
@@ -135,18 +135,10 @@ class TestStepOverrides:
     def test_step_empty_llm(self):
         """Test Step llm property."""
         step = Step(name="test_step", step_id="id", description="A test step")
-        assert step.llm == None
+        assert step.llm is None
 
     def test_step_llm(self):
         """Test Step llm property with overrides."""
-        llm_dict = {
-            "model": "gpt-3.5-turbo",
-            "provider": "openai",
-            "kwargs": {
-                "api_key": "abc123",
-            },
-        }
-        overrides = StepOverrides(llm=llm_dict)
+        overrides = StepOverrides(llm="other")
         step = Step(name="test_step", step_id="id", description="A test step", overrides=overrides)
-        assert step.llm.model == llm_dict["model"]
-        assert step.llm.__provider__ == llm_dict["provider"]
+        assert step.llm == "other"

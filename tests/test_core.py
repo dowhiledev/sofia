@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 
 from nomos.config import AgentConfig, ToolsConfig
+from nomos.constants import DEFAULT_LLM_ID
 from nomos.core import Agent, Session
+from nomos.llms import LLMConfig
 from nomos.llms.base import LLMBase
 from nomos.models.agent import (
     Action,
@@ -1304,6 +1306,120 @@ class TestDeferredTools:
         assert current_step.tool_ids == []
 
 
+class TestSessionLLM:
+    """Test session LLM functionality."""
+
+    def test_passed_llm(self, mock_llm):
+        """Test that session LLM is passed correctly."""
+        step = Step(
+            step_id="step1",
+            name="test_step",
+            description="init step",
+        )
+        config = AgentConfig(
+            name="agent",
+            persona="You are a helpful assistant",
+            steps=[step],
+            start_step_id="step1",
+            max_examples=2,
+        )
+        agent = Agent.from_config(config=config, llm=mock_llm)
+
+        session = agent.create_session()
+        llm = session.get_llm()
+        assert llm == mock_llm
+
+        llm = session.get_llm(llm_id=DEFAULT_LLM_ID)
+        assert llm == mock_llm
+
+    def test_no_llm(self):
+        """Test that session raises error if no LLM is provided."""
+        step = Step(
+            step_id="step1",
+            name="test_step",
+            description="init step",
+        )
+        config = AgentConfig(
+            name="agent",
+            persona="You are a helpful assistant",
+            steps=[step],
+            start_step_id="step1",
+            max_examples=2,
+        )
+
+        with pytest.raises(ValueError):
+            Agent.from_config(config=config)
+
+    def test_config_llm(self, mock_llm):
+        """Test that session LLM is set from config."""
+        llm_config = LLMConfig(
+            provider="openai",
+            model="gpt-3.5-turbo",
+            kwargs={"api_key": "test_key"},
+        )
+
+        step = Step(
+            step_id="step1",
+            name="test_step",
+            description="init step",
+        )
+        config = AgentConfig(
+            name="agent",
+            persona="You are a helpful assistant",
+            steps=[step],
+            start_step_id="step1",
+            llm=llm_config,
+            max_examples=2,
+        )
+        agent = Agent.from_config(config=config)
+
+        session = agent.create_session()
+        llm = session.get_llm()
+        assert isinstance(llm, LLMBase)
+        assert llm.__provider__ == "openai"
+
+        llm = session.get_llm(llm_id=DEFAULT_LLM_ID)
+        assert isinstance(llm, LLMBase)
+        assert llm.__provider__ == "openai"
+
+    def test_multiple_llms(self):
+        """Test that session can handle multiple LLMs."""
+        llm_config_1 = LLMConfig(
+            provider="openai",
+            model="gpt-3.5",
+            kwargs={"api_key": "test_key_1"},
+        )
+        llm_config_2 = LLMConfig(
+            provider="openai",
+            model="gpt-4",
+            kwargs={"api_key": "test_key_2"},
+        )
+
+        step = Step(
+            step_id="step1",
+            name="test_step",
+            description="init step",
+        )
+        config = AgentConfig(
+            name="agent",
+            persona="You are a helpful assistant",
+            steps=[step],
+            start_step_id="step1",
+            llm={"global": llm_config_1, "gpt4": llm_config_2},
+            max_examples=2,
+        )
+        agent = Agent.from_config(config=config)
+
+        session = agent.create_session()
+        llm_1 = session.get_llm(llm_id="global")
+        assert isinstance(llm_1, LLMBase)
+        assert llm_1.model == "gpt-3.5"
+
+        llm_2 = session.get_llm(llm_id="gpt4")
+        assert isinstance(llm_2, LLMBase)
+        assert llm_2.model == "gpt-4"
+
+
 class TestStepOverrides:
     """Test StepOverrides functionality."""
 
@@ -1337,8 +1453,8 @@ class TestStepOverrides:
         assert custom_persona in session.llm.messages_received[0].content
         assert default_persona not in session.llm.messages_received[0].content
 
-    def test_get_step_llm(self, mock_llm):
-        """Test getting the step LLM."""
+    def test_get_step_llm_id(self, mock_llm):
+        """Test getting the step LLM ID."""
         step = Step(step_id="step1", name="test_step", description="init step")
         config = AgentConfig(
             name="agent",
@@ -1349,11 +1465,10 @@ class TestStepOverrides:
         agent = Agent.from_config(config=config, llm=mock_llm)
 
         session = agent.create_session()
-        llm = session._get_step_llm(step=step)
-        assert llm == mock_llm
+        llm = session._get_step_llm_id(step=step)
+        assert llm == DEFAULT_LLM_ID
 
-        step_mock = MagicMock(spec=LLMBase)
         with patch.object(Step, "llm", new_callable=PropertyMock) as step_llm:
-            step_llm.return_value = step_mock
-            llm = session._get_step_llm(step=step)
-            assert llm == step_mock
+            step_llm.return_value = "other"
+            llm = session._get_step_llm_id(step=step)
+            assert llm == "other"

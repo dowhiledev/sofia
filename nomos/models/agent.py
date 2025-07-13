@@ -16,7 +16,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from ..utils.utils import create_base_model, create_enum
 
@@ -106,22 +106,7 @@ class StepOverrides(BaseModel):
     """
 
     persona: Optional[str] = None
-    llm: Optional[Any] = None
-
-    @field_validator("llm")
-    def validate_llm(cls, value: Any) -> Any:
-        """
-        Validate the LLM configuration.
-
-        :param value: The LLM configuration to validate.
-        :return: The validated LLM configuration.
-        """
-        if isinstance(value, dict):
-            from ..llms import LLMConfig
-
-            return LLMConfig.model_validate(value)
-        else:
-            raise ValueError("LLM override must be a dictionary or an instance of LLMConfig")
+    llm: Optional[str] = None
 
 
 class Step(BaseModel):
@@ -215,15 +200,13 @@ class Step(BaseModel):
         return self.overrides.persona if self.overrides else None
 
     @property
-    def llm(self) -> Any:
+    def llm(self) -> Optional[str]:
         """
         Get the LLM override for this step.
 
-        :return: LLM configuration if available, otherwise None.
+        :return: LLM Id.
         """
-        if self.overrides and self.overrides.llm:
-            return self.overrides.llm.get_llm()
-        return None
+        return self.overrides.llm if self.overrides else None
 
     @property
     def tool_ids(self) -> List[str]:

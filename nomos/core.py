@@ -7,6 +7,7 @@ import uuid
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .config import AgentConfig
+from .constants import DEFAULT_LLM_ID
 from .llms import LLMBase
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
@@ -245,13 +246,28 @@ class Session:
         self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
-    def _get_step_llm(self, step: Step) -> LLMBase:
+    def _get_step_llm_id(self, step: Step) -> str:
         """
-        Get the LLM to use for the given step.
+        Get the LLM ID to use for the given step.
 
-        :return: LLMBase instance for the current step.
+        :return: LLM ID for the current step.
         """
-        return step.llm or self.llm
+        return step.llm or DEFAULT_LLM_ID
+
+    def get_llm(self, llm_id: str = DEFAULT_LLM_ID) -> LLMBase:
+        """
+        Get the LLM instance for the given ID.
+
+        :param llm_id: The ID of the LLM to retrieve.
+        :return: The LLM instance.
+        """
+
+        if self.config:
+            llm = self.config.get_llm(llm_id)
+            if not llm and llm_id == DEFAULT_LLM_ID:
+                llm = self.llm
+
+        return llm
 
     def _add_event(
         self, event_type: str, content: str, decision: Optional[Decision] = None
@@ -302,7 +318,8 @@ class Session:
 
         :return: The decision made by the LLM.
         """
-        llm = self._get_step_llm(self.current_step)
+        llm_id = self._get_step_llm_id(self.current_step)
+        llm = self.get_llm(llm_id)
         _decision_model = llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
@@ -717,7 +734,8 @@ class Agent:
         if not llm:
             if not config.llm:
                 raise ValueError("No LLM provided. Please provide an LLM or a config with an LLM.")
-            llm = config.llm.get_llm()
+            llm = config.get_llm()
+
         tools = tools or []
         tools.extend(config.tools.get_tools())
         return cls(
