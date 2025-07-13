@@ -39,14 +39,21 @@ class FlowComponent(ABC):
 class FlowConfig(BaseModel):
     """Configuration for a flow."""
 
-    flow_id: str = Field(..., description="Unique identifier for the flow")
+    flow_id: str = Field(
+        ...,
+        description="Unique identifier for the flow",
+        validation_alias="id",
+        serialization_alias="id",
+    )
     enters: List[str] = Field(..., description="Step IDs that can enter this flow")
     exits: List[str] = Field(..., description="Step IDs that can exit this flow")
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, validation_alias="desc", serialization_alias="desc")
     components: Dict[str, dict[str, Any]] = Field(
         default_factory=dict,
         description="Components to be used in the flow, e.g., memory, tools",
     )
+
+    model_config = {"populate_by_name": True}
 
 
 class Flow:

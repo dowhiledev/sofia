@@ -508,6 +508,188 @@ def schema(
         console.print_json(schema_json)
 
 
+@app.command()
+def validate(
+    config: str = typer.Argument(..., help="Path to agent configuration YAML file to validate"),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Show detailed validation information"
+    ),
+) -> None:
+    """Validate agent configuration YAML file."""
+    print_banner()
+
+    config_path = Path(config)
+
+    # Check if file exists
+    if not config_path.exists():
+        console.print(
+            f"[red]ERROR:[/red] Configuration file not found: [bold]{config_path}[/bold]",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
+
+    # Check if file has correct extension
+    if config_path.suffix.lower() not in [".yaml", ".yml"]:
+        console.print(
+            f"[yellow]WARNING:[/yellow] File extension is not .yaml or .yml: [bold]{config_path}[/bold]",
+            style=WARNING_COLOR,
+        )
+
+    console.print(
+        Panel(
+            f"Validating configuration file: [bold]{config_path}[/bold]",
+            title="Configuration Validation",
+            border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
+        )
+    )
+
+    try:
+        # Attempt to load and validate the configuration
+        agent_config = AgentConfig.from_yaml(str(config_path))
+
+        # If we reach here, the configuration is valid
+        console.print(
+            Panel(
+                "[bold green]✓ Configuration is valid![/bold green]",
+                border_style=SUCCESS_COLOR,
+                padding=(1, 2),
+                expand=False,
+            )
+        )
+
+        if verbose:
+            # Show detailed information about the configuration
+            info_table = Table(title="Configuration Details")
+            info_table.add_column("Property", style=PRIMARY_COLOR)
+            info_table.add_column("Value")
+
+            info_table.add_row("Agent Name", agent_config.name)
+            info_table.add_row("Persona", agent_config.persona or "Not specified")
+            info_table.add_row("Number of Steps", str(len(agent_config.steps)))
+            info_table.add_row("Start Step ID", agent_config.start_step_id)
+            info_table.add_row("Max Iterations", str(agent_config.max_iter))
+            info_table.add_row("Max Errors", str(agent_config.max_errors))
+            info_table.add_row("Max Examples", str(agent_config.max_examples))
+
+            if agent_config.llm:
+                info_table.add_row("LLM Provider", agent_config.llm.provider)
+                info_table.add_row("LLM Model", agent_config.llm.model)
+            else:
+                info_table.add_row("LLM", "Using default (OpenAI)")
+
+            if agent_config.flows:
+                info_table.add_row("Number of Flows", str(len(agent_config.flows)))
+
+            if agent_config.session:
+                info_table.add_row("Session Store Type", agent_config.session.store_type.value)
+                info_table.add_row("Session TTL", f"{agent_config.session.default_ttl}s")
+
+            info_table.add_row("Server Port", str(agent_config.server.port))
+            info_table.add_row("Server Workers", str(agent_config.server.workers))
+
+            console.print()
+            console.print(info_table)
+
+            # Show step details
+            if agent_config.steps:
+                steps_table = Table(title="Steps Overview")
+                steps_table.add_column("Step ID", style=PRIMARY_COLOR)
+                steps_table.add_column("Description")
+                steps_table.add_column("Examples Count")
+
+                for step in agent_config.steps:
+                    example_count = len(step.examples) if step.examples else 0
+                    steps_table.add_row(
+                        step.step_id,
+                        step.description[:50] + "..."
+                        if len(step.description) > 50
+                        else step.description,
+                        str(example_count),
+                    )
+
+                console.print()
+                console.print(steps_table)
+
+        # Validation warnings and recommendations
+        warnings = []
+        recommendations = []
+
+        # Check for common issues
+        if not agent_config.persona:
+            recommendations.append("Consider adding a persona to give your agent more character")
+
+        if len(agent_config.steps) == 1:
+            recommendations.append(
+                "Single-step agents are simple - consider adding more steps for complex workflows"
+            )
+
+        if not agent_config.llm:
+            warnings.append("No LLM configuration specified - will use default OpenAI settings")
+
+        if agent_config.start_step_id not in [step.step_id for step in agent_config.steps]:
+            warnings.append(
+                f"Start step ID '{agent_config.start_step_id}' not found in defined steps"
+            )
+
+        # Check for unreachable steps
+        referenced_steps = {agent_config.start_step_id}
+        for step in agent_config.steps:
+            if step.routes:
+                for route in step.routes:
+                    referenced_steps.add(route.target)
+
+        unreachable_steps = [
+            step.step_id for step in agent_config.steps if step.step_id not in referenced_steps
+        ]
+        if unreachable_steps:
+            warnings.append(f"Potentially unreachable steps: {', '.join(unreachable_steps)}")
+
+        # Display warnings and recommendations
+        if warnings or recommendations:
+            console.print()
+
+        if warnings:
+            warning_panel = Panel(
+                "\n".join([f"• {warning}" for warning in warnings]),
+                title="[bold yellow]Warnings[/bold yellow]",
+                border_style=WARNING_COLOR,
+                padding=(1, 2),
+                expand=False,
+            )
+            console.print(warning_panel)
+
+        if recommendations:
+            recommendation_panel = Panel(
+                "\n".join([f"• {rec}" for rec in recommendations]),
+                title="[bold blue]Recommendations[/bold blue]",
+                border_style=PRIMARY_COLOR,
+                padding=(1, 2),
+                expand=False,
+            )
+            console.print(recommendation_panel)
+
+    except Exception as e:
+        console.print(
+            Panel(
+                f"[bold red]✗ Configuration validation failed![/bold red]\n\nError: {str(e)}",
+                border_style=ERROR_COLOR,
+                padding=(1, 2),
+                expand=False,
+            )
+        )
+
+        if verbose:
+            import traceback
+
+            console.print("\n[red]Detailed error information:[/red]")
+            console.print(traceback.format_exc())
+
+        raise typer.Exit(1)
+
+
 def _generate_project_files(
     target_dir: Path, name: str, persona: str, llm_choice: str, steps: List[Step]
 ) -> None:
