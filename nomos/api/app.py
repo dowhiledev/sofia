@@ -15,10 +15,10 @@ from fastapi.staticfiles import StaticFiles
 from nomos.api.agent import agent
 from nomos.api.db import init_db
 from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
-from nomos.api.session_store import SessionStore, create_session_store
-from nomos.api.yaml_to_mermaid import generate_config_json, parse_yaml_config
+from nomos.api.sessions import SessionStore, create_session_store
 from nomos.models.agent import Message as FlowMessage
 from nomos.models.agent import StepIdentifier, Summary
+from nomos.utils.yml2mm import generate_config_json, parse_yaml_config
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")
@@ -35,7 +35,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global session_store
     # Initialize database
     await init_db()
-    session_store = await create_session_store()
+    session_config = getattr(agent.config, "session", None)
+    session_store = await create_session_store(session_config)
     assert session_store is not None, "Session store initialization failed"
     yield
     # Cleanup
@@ -73,8 +74,8 @@ async def get_chat_ui() -> HTMLResponse:
 async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
     """Create a new session."""
     assert session_store is not None, "Session store not initialized"
-    session_id = str(uuid.uuid4())
     session = agent.create_session()
+    session_id = session.session_id  # Use the session's internal ID
     await session_store.set(session_id, session)
     # Get initial message from agent
     if initiate:

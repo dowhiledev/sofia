@@ -6,13 +6,15 @@ from pydantic import BaseModel
 
 from .anthropic import Anthropic
 from .base import LLMBase
+from .cohere import Cohere
 from .google import Gemini
+from .groq import Groq
 from .huggingface import HuggingFace
 from .mistral import Mistral
 from .ollama import Ollama
 from .openai import OpenAI
 
-LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace, Anthropic]
+LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace, Anthropic, Groq, Cohere]
 
 
 class LLMConfig(BaseModel):
@@ -25,7 +27,9 @@ class LLMConfig(BaseModel):
         kwargs (dict): Additional parameters for the LLM API.
     """
 
-    provider: Literal["openai", "mistral", "google", "ollama", "huggingface", "anthropic"]
+    provider: Literal[
+        "openai", "mistral", "google", "ollama", "huggingface", "anthropic", "groq", "cohere"
+    ]
     model: str
     embedding_model: Optional[str] = None
     kwargs: Dict[str, str] = {}
@@ -50,9 +54,11 @@ __all__ = [
     "LLMConfig",
     "LLMBase",
     "OpenAI",
+    "Cohere",
     "Gemini",
     "Mistral",
     "Ollama",
     "HuggingFace",
     "Anthropic",
+    "Groq",
 ]

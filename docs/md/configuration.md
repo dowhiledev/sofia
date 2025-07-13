@@ -76,6 +76,51 @@ session = agent.create_session()
 
 ## YAML Configuration
 
+### Field Naming Compatibility
+
+NOMOS supports both compact and descriptive field names for better flexibility:
+
+| Compact Form | Descriptive Form | Description |
+|--------------|------------------|-------------|
+| `id` | `step_id` / `flow_id` | Unique identifier |
+| `desc` | `description` | Step/flow description |
+| `tools` | `available_tools` | Available tools list |
+| `paths` | `routes` | Step transitions |
+| `to` | `target` | Route target step |
+| `when` | `condition` | Route condition |
+| `eg` | `examples` | Decision examples |
+
+You can use either naming convention or mix them in the same configuration:
+
+```yaml
+# Using compact form
+steps:
+  - id: start
+    desc: Greet the user
+    tools: [greet]
+    paths:
+      - to: end
+        when: User is done
+
+# Using descriptive form
+steps:
+  - step_id: start
+    description: Greet the user
+    available_tools: [greet]
+    routes:
+      - target: end
+        condition: User is done
+
+# Mixed (both work identically)
+steps:
+  - id: start
+    description: Greet the user
+    tools: [greet]
+    routes:
+      - to: end
+        when: User is done
+```
+
 ### Basic YAML Config
 
 ```yaml
@@ -252,6 +297,20 @@ name: my-agent
 # ... other config
 max_errors: 3  # Maximum consecutive errors before stopping
 max_iter: 5   # Maximum iterations per interaction
+```
+
+### Session Store Configuration
+
+You can configure how sessions are stored by adding a `session` block to your configuration YAML. By default, sessions are kept in memory. To use PostgreSQL with Redis caching and Kafka event streaming:
+
+```yaml
+session:
+  store_type: production
+  database_url: postgresql+asyncpg://user:pass@postgres/dbname
+  redis_url: redis://redis:6379/0
+  kafka_brokers: kafka:9092
+  kafka_topic: session_events
+  events_enabled: true
 ```
 
 ## Environment Variables

@@ -37,9 +37,17 @@ LLM_CHOICES = {
         "provider": "anthropic",
         "model": "claude-sonnet-4-20250514",
     },
+    "Groq": {
+        "provider": "groq",
+        "model": "llama3-8b-8192",
+    },
     "HuggingFace": {
         "provider": "huggingface",
         "model": "",
+    },
+    "Cohere": {
+        "provider": "cohere",
+        "model": "command-a-03-2025",
     },
 }
 

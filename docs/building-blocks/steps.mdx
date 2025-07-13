@@ -34,23 +34,29 @@ Each step has a single, well-defined purpose in your agent's workflow. This deco
 
 ```yaml
 steps:
-  - step_id: greet_customer
-    description: |
+  - step_id: greet_customer  # Can also use 'id'
+    description: |            # Can also use 'desc'
       Welcome the customer and understand their needs.
       Ask how you can help them today and listen for their response.
-    available_tools: []
-    routes:
-      - target: take_order
-        condition: Customer wants to place an order
+    available_tools: []       # Can also use 'tools'
+    routes:                   # Can also use 'paths'
+      - target: take_order    # Can also use 'to'
+        condition: Customer wants to place an order  # Can also use 'when'
       - target: customer_support
         condition: Customer has questions or needs help
       - target: end
         condition: Customer wants to leave
-    examples:
+    examples:                 # Can also use 'eg'
       - context: "New customer enters"
         decision: "Greet warmly and ask how to help"
         visibility: "always"
 ```
+
+<Note>
+**Field Naming Flexibility**
+
+NOMOS supports both compact (`id`, `desc`, `tools`, `paths`, `to`, `when`, `eg`) and descriptive (`step_id`, `description`, `available_tools`, `routes`, `target`, `condition`, `examples`) field names. You can use either convention or mix them in the same configuration file.
+</Note>
 
 ### Step Components
 
@@ -58,7 +64,7 @@ steps:
   <Tab title="Identity">
     **Step ID**: Unique identifier for the step
     ```yaml
-    step_id: take_coffee_order
+    step_id: take_coffee_order  # or 'id'
     ```
     This is how other steps reference this step in their routes.
   </Tab>
@@ -66,7 +72,7 @@ steps:
   <Tab title="Behavior">
     **Description**: What the agent should do in this step
     ```yaml
-    description: |
+    description: |  # or 'desc'
       Take the customer's coffee order, including type, size, and any modifications.
       Use the menu tool to show available options if needed.
     ```
@@ -76,7 +82,7 @@ steps:
   <Tab title="Capabilities">
     **Available Tools**: Tools the agent can use in this step
     ```yaml
-    available_tools:
+    available_tools:  # or 'tools'
       - get_menu_items
       - add_to_cart
       - calculate_price
@@ -87,9 +93,9 @@ steps:
   <Tab title="Flow Control">
     **Routes**: Where the agent can go next
     ```yaml
-    routes:
-      - target: confirm_order
-        condition: Order is complete and customer is satisfied
+    routes:  # or 'paths'
+      - target: confirm_order     # or 'to'
+        condition: Order is complete and customer is satisfied  # or 'when'
       - target: modify_order
         condition: Customer wants to change something
     ```

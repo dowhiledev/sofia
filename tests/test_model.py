@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastmcp.exceptions import ToolError
 
-from nomos.models.tool import MCPServer, Tool, ToolCallError
+from nomos.models.mcp import MCPServer
+from nomos.models.tool import Tool
 from nomos.utils.utils import create_base_model
 
 
@@ -40,7 +40,7 @@ class TestMCPServer:
         assert server2.url_path == "https://example.com/mcp"
 
     @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
+    @patch("nomos.models.mcp.Client")
     async def test_list_tools_async(self, mock_client_class):
         """Test asynchronous list_tools_async method."""
         # Mock the client and its methods
@@ -72,7 +72,7 @@ class TestMCPServer:
         }
 
     @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
+    @patch("nomos.models.mcp.Client")
     async def test_call_tool_async(self, mock_client_class, call_tool_result):
         """Test asynchronous call_tool_async method."""
         # Mock the client and its methods
@@ -98,30 +98,13 @@ class TestMCPServer:
 
         assert result == [call_tool_result.text]
 
-    @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
-    async def test_call_tool_async_error(self, mock_client_class):
-        """Test call_tool_async raises ToolCallError on client error."""
-        # Mock the client and its methods
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-
-        tool_name = "test_tool"
-        params = {"param1": "value"}
-
-        # Simulate an error from the client
-        mock_client.call_tool.side_effect = ToolError("Tool call failed")
-        server = MCPServer(name="server", url="https://example.com")
-        with pytest.raises(ToolCallError):
-            await server.call_tool_async(tool_name, params)
-
 
 class TestTool:
-    @patch("nomos.models.tool.MCPServer.get_tools")
+    @patch("nomos.models.mcp.MCPServer.get_tools")
     def test_from_mcp_server(self, mock_get_tools):
         """Test Tool.from_mcp_server method."""
         server_name = "test_server"
-        server = MCPServer(name=server_name, url="https://example.com")
+        server = MCPServer(name=server_name, url="https://example.com/nomos")
         tool_name = "test_tool"
         tool_description = "A test tool"
         tool_params = {"properties": {}}

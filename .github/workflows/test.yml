@@ -27,14 +27,14 @@ jobs:
         enable-cache: true
 
     - name: Install dependencies
-      run: uv sync --all-groups
+      run: uv sync --all-groups --all-extras
 
     - name: Install External tool dependencies
       run: |
         uv add 'crewai[tools]'
 
     - name: Run tests with pytest
-      run: uv run pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy --ignore=examples
+      run: uv run pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy --ignore=examples -n auto
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5

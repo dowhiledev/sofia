@@ -4,7 +4,7 @@ import os
 import pickle
 from typing import List, Union
 
-from nomos.models.agent import Message, StepIdentifier, Summary
+from nomos.models.agent import Event, StepIdentifier, Summary
 
 
 class Memory:
@@ -12,9 +12,9 @@ class Memory:
 
     def __init__(self) -> None:
         """Initialize memory."""
-        self.context: List[Union[Message, StepIdentifier, Summary]] = []
+        self.context: List[Union[Event, StepIdentifier, Summary]] = []
 
-    def add(self, item: Union[Message, StepIdentifier]) -> None:
+    def add(self, item: Union[Event, StepIdentifier]) -> None:
         """Add an item to memory."""
         self.context.append(item)
         self.optimize()
@@ -27,7 +27,7 @@ class Memory:
         """Optimize memory usage."""
         return
 
-    def get_history(self) -> List[Union[Message, Summary, StepIdentifier]]:
+    def get_history(self) -> List[Union[Event, Summary, StepIdentifier]]:
         """Get the history of messages."""
         return self.context
 

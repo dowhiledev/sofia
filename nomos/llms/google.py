@@ -22,6 +22,7 @@ class Gemini(LLMBase):
         """
         from google.genai import Client
 
+        kwargs.pop("embedding_model", None)
         self.model = model
         self.client = Client(**kwargs)
 

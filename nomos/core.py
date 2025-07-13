@@ -1,5 +1,6 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
+import asyncio
 import os
 import pickle
 import uuid
@@ -13,7 +14,7 @@ from .models.agent import (
     Action,
     Decision,
     DecisionConstraints,
-    Message,
+    Event,
     Response,
     State,
     Step,
@@ -109,6 +110,9 @@ class Session:
         )
         self.state_machine.load_state(state)
 
+        # Optional event emitter used for analytics
+        self.event_emitter: Any = None
+
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -121,6 +125,10 @@ class Session:
     def memory(self) -> Memory:
         """Get the session memory."""
         return self.state_machine.memory
+
+    def set_event_emitter(self, emitter: Any) -> None:
+        """Attach an event emitter to this session."""
+        self.event_emitter = emitter
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""
@@ -237,26 +245,46 @@ class Session:
         self.current_step.reduce_tools(deferred_tool_names)
         return tuple(tools)
 
-    def _add_message(self, role: str, message: str) -> None:
-        """
-        Add a message to the session history.
-
-        :param role: Role of the message sender (e.g., 'user', 'assistant', 'tool').
-        :param message: The message content.
-        """
-        message_obj = Message(role=role, content=message)
+    def _add_event(
+        self, event_type: str, content: str, decision: Optional[Decision] = None
+    ) -> None:
+        """Add an event to the session history."""
+        event_obj = Event(type=event_type, content=content, decision=decision)
 
         # If we're in a flow, only update flow memory
         if self.state_machine.current_flow and self.state_machine.flow_context:
             flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
-                flow_memory.add_to_context(message_obj)
+                flow_memory.add_to_context(event_obj)
             # Don't update session memory while in flow
         else:
             # Only update session memory when not in a flow
-            self.memory.add(message_obj)
+            self.memory.add(event_obj)
 
-        log_debug(f"{role.title()} added: {message}")
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type=event_type,
+                    data={"content": content},
+                    decision=decision,
+                )
+                # Use create_task but don't await to avoid blocking
+                # Add error handling for the task
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit event: {exc}")
+        log_debug(f"{event_type.title()} added: {content}")
+
+    def _handle_event_emission_error(self, task: asyncio.Task) -> None:
+        """Handle errors from event emission tasks."""
+        try:
+            task.result()  # This will raise any exception that occurred
+        except Exception as exc:
+            log_error(f"Event emission failed: {exc}")
 
     def _get_next_decision(
         self, decision_constraints: Optional[DecisionConstraints] = None
@@ -323,7 +351,7 @@ class Session:
             raise ValueError(f"Maximum errors reached ({self.max_errors}). Stopping session.")
         if next_count >= self.max_iter:
             if not self.current_step.auto_flow:
-                self._add_message(
+                self._add_event(
                     "fallback",
                     (
                         "Maximum iterations reached. Inform the user and based on the "
@@ -343,7 +371,7 @@ class Session:
 
         self.reset_deferred_tools()
         log_debug(f"User input received: {user_input}")
-        self._add_message("user", user_input) if user_input else None
+        self._add_event("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
 
         # Check for flow transitions
@@ -357,7 +385,11 @@ class Session:
 
         # Validate decision
         if decision.action == Action.RESPOND and decision.response is None:
-            self._add_message("error", "RESPOND action requires a response, but none was provided.")
+            self._add_event(
+                "error",
+                "RESPOND action requires a response, but none was provided.",
+                decision,
+            )
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
@@ -365,7 +397,11 @@ class Session:
                 verbose=verbose,
             )
         if decision.action == Action.MOVE and decision.step_id is None:
-            self._add_message("error", "MOVE action requires a step_id, but none was provided.")
+            self._add_event(
+                "error",
+                "MOVE action requires a step_id, but none was provided.",
+                decision,
+            )
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
@@ -373,8 +409,10 @@ class Session:
                 verbose=verbose,
             )
         if decision.action == Action.TOOL_CALL and decision.tool_call is None:
-            self._add_message(
-                "error", "TOOL_CALL action requires a tool_call, but none was provided."
+            self._add_event(
+                "error",
+                "TOOL_CALL action requires a tool_call, but none was provided.",
+                decision,
             )
             return self.next(
                 no_errors=no_errors + 1,
@@ -387,7 +425,7 @@ class Session:
 
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action == Action.RESPOND:
-            self._add_message(self.name, str(decision.response))
+            self._add_event(self.name, str(decision.response), decision)
             res = Response(decision=decision)
             if verbose:
                 pp_response(res)
@@ -401,23 +439,28 @@ class Session:
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
                 try:
                     tool_results = self._run_tool(tool_name, tool_kwargs)
-                    self._add_message(
+                    self._add_event(
                         "tool",
                         f"Tool {tool_name} executed successfully with args {tool_kwargs}.\nResults: {tool_results}",
+                        decision,
                     )
                 except Exception as e:
-                    self._add_message("tool", f"Running tool {tool_name} with args {tool_kwargs}")
+                    self._add_event(
+                        "tool",
+                        f"Running tool {tool_name} with args {tool_kwargs}",
+                        decision,
+                    )
                     raise e
                 log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
                 _error = e
-                self._add_message("fallback", str(e))
+                self._add_event("fallback", str(e), decision)
             except InvalidArgumentsError as e:
                 _error = e
-                self._add_message("error", str(e))
+                self._add_event("error", str(e), decision)
             except Exception as e:
                 _error = e
-                self._add_message("error", str(e))
+                self._add_event("error", str(e), decision)
 
             res = Response(decision=decision, tool_output=tool_results)
             if verbose:
@@ -457,9 +500,10 @@ class Session:
 
             else:
                 allowed = self.state_machine.transitions.get(self.state_machine.current_step_id, [])
-                self._add_message(
+                self._add_event(
                     "error",
                     f"Invalid route: {decision.step_id} not in {allowed}",
+                    decision,
                 )
                 _error = ValueError(f"Invalid route: {decision.step_id} not in {allowed}")
             res = Response(decision=decision)
@@ -492,15 +536,16 @@ class Session:
                     self.state_machine.current_flow = None
                     self.state_machine.flow_context = None
 
-            self._add_message("end", "Session ended.")
+            self._add_event("end", "Session ended.", decision)
             res = Response(decision=decision)
             if verbose:
                 pp_response(res)
             return res
         else:
-            self._add_message(
+            self._add_event(
                 "error",
                 f"Unknown action: {decision.action}. Please check the action type.",
+                decision,
             )
             return self.next(
                 no_errors=no_errors + 1,
@@ -523,6 +568,21 @@ class Session:
         else:
             # Only update session memory when not in a flow
             self.memory.add(step_identifier)
+
+        if self.event_emitter:
+            try:
+                from .events import SessionEvent
+
+                sess_event = SessionEvent(
+                    session_id=self.session_id,
+                    event_type="step",
+                    data={"step_id": step_identifier.step_id},
+                )
+                # Use create_task but add error handling
+                task = asyncio.create_task(self.event_emitter.emit(sess_event))
+                task.add_done_callback(self._handle_event_emission_error)
+            except Exception as exc:  # noqa: BLE001
+                log_error(f"Failed to emit step event: {exc}")
 
         log_debug(f"Step identifier added: {step_identifier.step_id}")
 
@@ -751,6 +811,7 @@ class Agent:
         return_step: bool = False,
         verbose: bool = False,
         decision_constraints: Optional[DecisionConstraints] = None,
+        keep_event_decision: bool = False,
     ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -761,6 +822,7 @@ class Agent:
         :param return_step: Whether to return step Transitions.
         :param verbose: Whether to return verbose output.
         :param decision_constraints: Optional constraints for the decision model on retry.
+        :param keep_event_decision: Whether to retain decision data in returned events.
         :return: A tuple containing the decision and tool output, along with the updated session state.
         :raises ValueError: If session_data is provided but not a valid State object.
         """
@@ -778,7 +840,16 @@ class Agent:
             decision_constraints=decision_constraints,
             verbose=verbose,
         )
-        res.state = session.get_state()
+        state = session.get_state()
+        if not keep_event_decision:
+            for item in state.history:
+                if isinstance(item, Event):
+                    item.decision = None
+            if state.flow_state:
+                for item in state.flow_state.flow_memory_context:
+                    if isinstance(item, Event):
+                        item.decision = None
+        res.state = state
         return res
 
     def display(self, save_path: Optional[str] = None, is_notebook: bool = True) -> None:

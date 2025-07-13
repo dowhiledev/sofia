@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from .agent import Message, Step, Summary
+from .agent import Event, Step, Summary
 
 
 class FlowContext(BaseModel):
@@ -13,7 +13,7 @@ class FlowContext(BaseModel):
 
     flow_id: str
     entry_step: str
-    previous_context: Optional[List[Union[Message, Summary]]] = None
+    previous_context: Optional[List[Union[Event, Summary]]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)  # noqa: ANN401
 
 
@@ -39,14 +39,21 @@ class FlowComponent(ABC):
 class FlowConfig(BaseModel):
     """Configuration for a flow."""
 
-    flow_id: str = Field(..., description="Unique identifier for the flow")
+    flow_id: str = Field(
+        ...,
+        description="Unique identifier for the flow",
+        validation_alias="id",
+        serialization_alias="id",
+    )
     enters: List[str] = Field(..., description="Step IDs that can enter this flow")
     exits: List[str] = Field(..., description="Step IDs that can exit this flow")
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, validation_alias="desc", serialization_alias="desc")
     components: Dict[str, dict[str, Any]] = Field(
         default_factory=dict,
         description="Components to be used in the flow, e.g., memory, tools",
     )
+
+    model_config = {"populate_by_name": True}
 
 
 class Flow:
@@ -112,7 +119,7 @@ class Flow:
     def enter(
         self,
         entry_step: str,
-        previous_context: Optional[List[Union[Message, Summary]]] = None,
+        previous_context: Optional[List[Union[Event, Summary]]] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> FlowContext:
         """Enter the flow at a specific step."""

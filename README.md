@@ -11,7 +11,7 @@
 [![codecov](https://codecov.io/gh/dowhiledev/nomos/graph/badge.svg?token=MXRK9HGE5R&style=flat-square)](https://codecov.io/gh/dowhiledev/nomos)
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
-[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base?style=flat-square)](https://hub.docker.com/r/chandralegend/nomos-base)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-nomos-blue?style=flat-square)](https://github.com/dowhiledev/nomos/pkgs/container/nomos)
 [![Open Issues](https://img.shields.io/github/issues-raw/dowhiledev/nomos?style=flat-square)](https://github.com/dowhiledev/nomos/issues)
 
 </div>
@@ -46,20 +46,21 @@ To learn more about NOMOS, check out [the documentation](docs/md/). If you're lo
 
 NOMOS helps developers build sophisticated AI agents through structured workflows and configurable components, making complex agent development accessible to teams of all skill levels.
 
-Use NOMOS for:
-- **Multi-step agent workflows**. Create complex, stateful interactions with step-by-step flow definitions, each with specialized tools and intelligent routing between conversation states.
-- **Rapid prototyping to production**. Start with our Playground for no-code prototyping, then seamlessly transition to YAML configuration or full Python implementation as your needs evolve.
-- **Tool ecosystem integration**. Leverage your existing Python functions, or integrate with CrewAI, LangChain tools, and any Python package through our unified tool system with automatic documentation generation.
-- **Production-ready deployment**. Built-in session management, error handling, monitoring, and Docker deployment options make it easy to scale from prototype to production.
+| Use Case | Description |
+|----------|-------------|
+| **Multi-step Workflows** | Complex, stateful interactions with specialized tools and intelligent routing |
+| **Rapid Prototyping** | No-code Playground → YAML config → Full Python implementation |
+| **Tool Integration** | Python functions, CrewAI, LangChain tools with auto-documentation |
+| **Production Deployment** | Built-in session management, error handling, and monitoring |
 
 ## NOMOS Ecosystem
 
-While NOMOS can be used standalone, it integrates with a growing ecosystem of tools and services designed for agent development:
-
-- **[Playground](https://nomos-builder.vercel.app/)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
-- **[TypeScript SDK](support/ts-sdk/README.md)** - Full-featured client library for web and Node.js applications, enabling seamless integration of NOMOS agents into your frontend applications.
-- **[Docker Base Images](docs/md/deployment.md#docker-base-image)** - Pre-configured containers for rapid deployment with built-in support for Redis, PostgreSQL, and monitoring integrations.
-- **[CLI Tools](docs/md/cli-usage.md)** - Comprehensive command-line interface for agent development, testing, and deployment with `nomos init`, `nomos run`, `nomos train`, `nomos serve`, `nomos test`, `nomos schema`, and `nomos --version` commands.
+| Component | Description | Link |
+|-----------|-------------|------|
+| **Playground** | Drag-and-drop flow designer for rapid prototyping | [Try it live →](https://nomos-builder.vercel.app/) |
+| **TypeScript SDK** | Full-featured client library for web and Node.js | [Documentation →](support/ts-sdk/README.md) |
+| **Docker Images** | Pre-configured containers with Redis, PostgreSQL support (GitHub Packages + Docker Hub) | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
+| **CLI Tools** | Complete toolkit: `init`, `run`, `serve`, `test`, `validate`, `schema` | [CLI Reference →](docs/md/cli-usage.md) |
 
 ## Key Features
 
@@ -111,3 +112,5 @@ For detailed information, check out our comprehensive guides:
 - **[CLI Reference](docs/md/cli-usage.md)**: Complete command-line interface documentation for development and deployment.
 
 Join the NOMOS community! For roadmap, support, contributing guidelines, and more, see our [Community Guide](docs/md/community.md).
+
+[![Discord Banner 2](https://discord.com/api/guilds/1393886830553731183/widget.png?style=banner2)](https://discord.com/invite/2F4sD69w?utm_source=Discord%20Widget&utm_medium=Connect)

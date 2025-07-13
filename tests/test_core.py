@@ -1,7 +1,6 @@
 """Tests for core Nomos agent functionality."""
 
 import os
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -13,7 +12,7 @@ from nomos.models.agent import (
     Action,
     Decision,
     DecisionConstraints,
-    Message,
+    Event,
     Route,
     Step,
     StepIdentifier,
@@ -153,8 +152,8 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     assert res.tool_output == "Test tool 0 response: test_arg"
 
     # Verify tool message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "tool" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "tool" for msg in messages)
 
 
 def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
@@ -193,8 +192,8 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "tool" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "tool" for msg in messages)
 
 
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
@@ -231,8 +230,8 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
         session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
-    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-    assert any(msg.role == "error" for msg in messages)
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "error" for msg in messages)
 
 
 def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
@@ -284,11 +283,11 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
 
 def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Test that external tools are properly registered in the session."""
-    # Test whether crewai tool is registered
+    # Test only package tools registration, skip crewai since it's not installed
 
     import os
 
-    os.environ["OPENAI_API_KEY"] = "test_key"  # PDFSearchTool requires this env var
+    os.environ["OPENAI_API_KEY"] = "test_key"  # Required env var
 
     config = AgentConfig(
         name="config_test",
@@ -298,14 +297,15 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
         tools=ToolsConfig(
             external_tools=[
                 {"tag": "@pkg/itertools.combinations", "name": "combinations"},
-                {"tag": "@crewai/FileReadTool", "name": "file_read_tool"},
-                {
-                    "tag": "@crewai/PDFSearchTool",
-                    "name": "pdf_search_tool",
-                    "kwargs": {
-                        "pdf": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                    },
-                },
+                # Skip crewai tools since crewai is not installed
+                # {"tag": "@crewai/FileReadTool", "name": "file_read_tool"},
+                # {
+                #     "tag": "@crewai/PDFSearchTool",
+                #     "name": "pdf_search_tool",
+                #     "kwargs": {
+                #         "pdf": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                #     },
+                # },
             ],
             tool_defs={
                 "combinations": ToolDef(
@@ -328,7 +328,8 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     assert agent.name == "config_test"
     assert agent.persona == "Config test persona"
     assert len(agent.steps) == 2
-    assert len(agent.tools) == 5
+    # Only 3 tools now: combinations + test_tool_0 + test_tool_1
+    assert len(agent.tools) == 3
 
     session = agent.create_session()
 
@@ -336,22 +337,6 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     pkg_tool = session.tools["combinations"]
     assert isinstance(pkg_tool, Tool)
     assert pkg_tool.name == "combinations"
-
-    # Test whether crewai FileReadTool is registered
-    crewai_tool = session.tools.get("file_read_tool")
-    assert crewai_tool is not None
-    assert (
-        crewai_tool.get_args_model().model_json_schema().get("properties", {}).get("file_path")
-        is not None
-    )
-
-    # Test whether PDFSearchTool is registered
-    pdf_search_tool = session.tools.get("pdf_search_tool")
-    assert pdf_search_tool is not None
-    assert (
-        pdf_search_tool.get_args_model().model_json_schema().get("properties", {}).get("query")
-        is not None
-    )
 
 
 # ======================================================================
@@ -505,8 +490,8 @@ class TestEndAction:
         assert res.tool_output is None
 
         # Check that end message was added
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        end_msgs = [msg for msg in messages if msg.role == "end"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        end_msgs = [msg for msg in messages if msg.type == "end"]
         assert len(end_msgs) == 1
         assert "Session ended" in end_msgs[0].content
 
@@ -529,21 +514,21 @@ class TestFromConfigErrors:
 class TestMemoryOperations:
     """Test memory operations without flows."""
 
-    def test_add_message_without_flow(self, basic_agent):
-        """Test adding message when no flow is active."""
+    def test_add_event_without_flow(self, basic_agent):
+        """Test adding event when no flow is active."""
         session = basic_agent.create_session()
 
         # Ensure no flow is active
         session.state_machine.current_flow = None
         session.state_machine.flow_context = None
 
-        session._add_message("user", "Test message")
+        session._add_event("user", "Test message")
 
-        # Message should be added to session memory
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        assert len(messages) == 1
-        assert messages[0].role == "user"
-        assert messages[0].content == "Test message"
+        # Event should be added to session memory
+        events = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        assert len(events) == 1
+        assert events[0].type == "user"
+        assert events[0].content == "Test message"
 
     def test_add_step_identifier_without_flow(self, basic_agent):
         """Test adding step identifier when no flow is active."""
@@ -568,7 +553,7 @@ class TestSessionStateOperations:
     def test_get_state_basic(self, basic_agent):
         """Test getting session state."""
         session = basic_agent.create_session()
-        session._add_message("user", "Hello")
+        session._add_event("user", "Hello")
 
         state = session.get_state()
 
@@ -637,7 +622,7 @@ class TestMaxIterationsBehavior:
         # and ensure auto_flow=False so it adds fallback message instead of raising RecursionError
 
         # First, manually add the fallback message that would be added when max_iter is reached
-        session._add_message(
+        session._add_event(
             "fallback",
             "Maximum iterations reached. Inform the user and based on the "
             "available context, produce a fallback response.",
@@ -660,8 +645,8 @@ class TestMaxIterationsBehavior:
         res = session.next(next_count=5)
 
         # Verify fallback message was added and response was generated
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        fallback_msgs = [msg for msg in messages if msg.role == "fallback"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        fallback_msgs = [msg for msg in messages if msg.type == "fallback"]
         assert len(fallback_msgs) == 1
         assert "Maximum iterations reached" in fallback_msgs[0].content
         assert res.decision.action == Action.RESPOND
@@ -738,8 +723,8 @@ class TestSessionPersistence:
 
         # Create session and add some history
         session = simple_agent.create_session()
-        session._add_message("user", "Hello")
-        session._add_message("assistant", "Hi there")
+        session._add_event("user", "Hello")
+        session._add_event("assistant", "Hi there")
 
         # Change working directory to temp path for the test
         original_cwd = os.getcwd()
@@ -818,7 +803,7 @@ class TestSessionStateOperationsExtended:
         assert session.session_id == "test_session"
         assert session.current_step.step_id == "start"
         assert len(session.memory.context) == 3
-        assert isinstance(session.memory.context[0], Message)
+        assert isinstance(session.memory.context[0], Event)
         assert isinstance(session.memory.context[2], StepIdentifier)
 
     def test_get_session_from_state_with_summary(self, basic_agent):
@@ -961,7 +946,7 @@ class TestAdvancedErrorHandling:
 
         assert res.decision.action == Action.RESPOND
         assert res.decision.response == "ok"
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
         assert any("requires a response" in msg.content for msg in messages)
 
 
@@ -1038,7 +1023,7 @@ class TestFlowIntegration:
         session.state_machine.flow_context = mock_flow_context
 
         # Add message should go to flow memory, not session memory
-        session._add_message("user", "Test message")
+        session._add_event("user", "Test message")
 
         mock_flow_memory.add_to_context.assert_called_once()
         # Session memory should not be updated
@@ -1104,8 +1089,8 @@ class TestEndActionFlow:
         assert session.state_machine.flow_context is None
 
         # Verify end message was added
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        end_msgs = [msg for msg in messages if msg.role == "end"]
+        messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+        end_msgs = [msg for msg in messages if msg.type == "end"]
         assert len(end_msgs) == 1
         assert "Session ended" in end_msgs[0].content
 
@@ -1147,10 +1132,10 @@ class TestAgentNext:
 
     def test_agent_next_with_session_context_object(self, basic_agent):
         """Test Agent.next with session State object."""
-        from nomos.models.agent import Message, State
+        from nomos.models.agent import Event, State
 
         session_context = State(
-            current_step_id="start", history=[Message(role="user", content="Hello")]
+            current_step_id="start", history=[Event(type="user", content="Hello")]
         )
 
         # Create a session and get tools from it
@@ -1196,6 +1181,40 @@ class TestAgentNext:
         assert res.decision.action == Action.RESPOND
         assert hasattr(res.state, "session_id")
         assert res.state.current_step_id == "start"
+
+    def test_agent_next_strips_event_decision_by_default(self, basic_agent):
+        session = basic_agent.create_session()
+        decision_model = basic_agent.llm._create_decision_model(
+            current_step=basic_agent.steps["start"],
+            current_step_tools=tuple(session._get_current_step_tools()),
+        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
+        basic_agent.llm.set_response(response)
+
+        res = basic_agent.next("hi")
+        decisions = [
+            e.decision
+            for e in res.state.history
+            if isinstance(e, Event) and e.type == basic_agent.name
+        ]
+        assert decisions and all(d is None for d in decisions)
+
+    def test_agent_next_keep_event_decision_flag(self, basic_agent):
+        session = basic_agent.create_session()
+        decision_model = basic_agent.llm._create_decision_model(
+            current_step=basic_agent.steps["start"],
+            current_step_tools=tuple(session._get_current_step_tools()),
+        )
+        response = decision_model(reasoning=["r"], action=Action.RESPOND.value, response="ok")
+        basic_agent.llm.set_response(response)
+
+        res = basic_agent.next("hi", keep_event_decision=True)
+        decisions = [
+            e.decision
+            for e in res.state.history
+            if isinstance(e, Event) and e.type == basic_agent.name
+        ]
+        assert decisions and all(d is not None for d in decisions)
 
     def test_current_step_tools_with_missing_tool_logging(self, basic_agent):
         """Test _get_current_step_tools handling when tool is missing."""

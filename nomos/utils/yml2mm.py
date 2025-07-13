@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Set
 
 import yaml
 
-from nomos.utils.logging import log_error, log_info
+from .logging import log_error, log_info
 
 
 def sanitize_node_id(node_id: str) -> str:

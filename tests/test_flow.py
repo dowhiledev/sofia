@@ -7,7 +7,7 @@ import pytest
 
 from nomos.config import AgentConfig
 from nomos.memory.flow import FlowMemoryComponent
-from nomos.models.agent import Message, Step
+from nomos.models.agent import Event, Step
 from nomos.models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManager
 from nomos.utils import flow_utils
 
@@ -49,7 +49,7 @@ class TestFlowContext:
 
     def test_flow_context_with_previous_context(self):
         """Test FlowContext with previous context."""
-        messages = [Message(role="user", content="Hello")]
+        messages = [Event(type="user", content="Hello")]
         context = FlowContext(flow_id="test_flow", entry_step="step1", previous_context=messages)
 
         assert context.previous_context == messages
