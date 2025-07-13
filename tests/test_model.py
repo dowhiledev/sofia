@@ -2,6 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from nomos.models.agent import Step, StepOverrides
 from nomos.models.mcp import MCPServer
 from nomos.models.tool import Tool
 from nomos.utils.utils import create_base_model
@@ -57,11 +58,12 @@ class TestMCPServer:
             }
         }
         mock_client.list_tools.return_value = [mock_tool]
-        server = MCPServer(name="server", url="https://example.com")
+        auth_key = "test_auth_key"
+        server = MCPServer(name="server", url="https://example.com", auth=auth_key)
         result = await server.list_tools_async()
 
         # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
+        mock_client_class.assert_called_once_with(server.url_path, auth=auth_key)
         mock_client.list_tools.assert_called_once()
 
         assert result[0].name == "test_tool"
@@ -87,22 +89,23 @@ class TestMCPServer:
         # Mock the call to the tool
         mock_client.call_tool.return_value = [call_tool_result]
 
-        server = MCPServer(name="server", url="https://example.com")
+        auth_key = "test_auth_key"
+        server = MCPServer(name="server", url="https://example.com", auth=auth_key)
         result = await server.call_tool_async(tool_name, params)
 
         # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
+        mock_client_class.assert_called_once_with(server.url_path, auth=auth_key)
         mock_client.call_tool.assert_called_once_with(tool_name, params)
 
         assert result == [call_tool_result.text]
 
 
 class TestTool:
-    @patch("nomos.models.tool.MCPServer.get_tools")
+    @patch("nomos.models.mcp.MCPServer.get_tools")
     def test_from_mcp_server(self, mock_get_tools):
         """Test Tool.from_mcp_server method."""
         server_name = "test_server"
-        server = MCPServer(name=server_name, url="https://example.com")
+        server = MCPServer(name=server_name, url="https://example.com/nomos")
         tool_name = "test_tool"
         tool_description = "A test tool"
         tool_params = {"properties": {}}
@@ -115,3 +118,29 @@ class TestTool:
         assert tools[0].name == f"{server.name}/{tool_name}"
         assert tools[0].description == tool_description
         assert tools[0].parameters == tool_params
+
+
+class TestStepOverrides:
+    """Test Step model overrides."""
+
+    def test_empty_step_persona(self):
+        """Test Step persona property."""
+        step = Step(name="test_step", step_id="id", description="A test step")
+        assert step.persona is None
+
+    def test_step_persona(self):
+        """Test Step persona property with overrides."""
+        overrides = StepOverrides(persona="test_persona")
+        step = Step(name="test_step", step_id="id", description="A test step", overrides=overrides)
+        assert step.persona == "test_persona"
+
+    def test_step_empty_llm(self):
+        """Test Step llm property."""
+        step = Step(name="test_step", step_id="id", description="A test step")
+        assert step.llm == "global"
+
+    def test_step_llm(self):
+        """Test Step llm property with overrides."""
+        overrides = StepOverrides(llm="other")
+        step = Step(name="test_step", step_id="id", description="A test step", overrides=overrides)
+        assert step.llm == "other"

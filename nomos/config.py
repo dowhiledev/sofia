@@ -11,7 +11,7 @@ from typing import Callable, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
-from .llms import LLMBase, LLMConfig, OpenAI
+from .llms import LLMBase, LLMConfig
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
@@ -204,7 +204,7 @@ class AgentConfig(BaseSettings):
     max_examples: int = 5  # Maximum number of examples to use in decision-making
     threshold: float = 0.5  # Minimum similarity score to include an example
 
-    llm: Optional[LLMConfig] = None  # Optional LLM configuration
+    llm: Optional[LLMConfig | Dict[str, LLMConfig]] = None  # Optional LLM configuration
     embedding_model: Optional[LLMConfig] = None  # Optional embedding model configuration
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
@@ -258,13 +258,21 @@ class AgentConfig(BaseSettings):
         with open(file_path, "w") as file:
             yaml.dump(self.model_dump(mode="json"), file, sort_keys=False)
 
-    def get_llm(self) -> LLMBase:
+    def get_llm(self) -> Optional[Dict[str, LLMBase]]:
         """
         Get the appropriate LLM instance based on the configuration.
+        :param id: ID of the LLM to retrieve.
 
         :return: An instance of the defined LLM integration.
         """
-        return self.llm.get_llm() if self.llm else OpenAI()
+        if not self.llm:
+            return None
+        llm_dict = (
+            {llm_id: llm.get_llm() for llm_id, llm in self.llm.items()}
+            if isinstance(self.llm, dict)
+            else {"global": self.llm.get_llm()}
+        )  # type: ignore
+        return llm_dict
 
     def get_embedding_model(self) -> Optional[LLMBase]:
         """

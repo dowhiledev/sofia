@@ -8,8 +8,8 @@ from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
-from nomos.core import Agent
-from nomos.models.agent import Message, State
+from ..core import Agent
+from ..models.agent import Message, State
 
 
 class SimulationDecision(Enum):  # noqa
@@ -57,7 +57,8 @@ class ScenarioRunner:
         :param max_turns: Maximum number of turns to run in the scenario.
         :return: List of tuples containing the timestamp and session data at each turn.
         """
-        llm = agent.llm
+        llm = agent.llm if not isinstance(agent.llm, dict) else agent.llm.get("global", None)
+        assert llm, "LLM must be provided in the agent."
         session_data = None
         session_history: List[tuple[datetime, Optional[State]]] = []
         chat_history: List[Message] = []
