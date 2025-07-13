@@ -393,6 +393,7 @@ class ToolWrapper(BaseModel):
                 name=self.id,
                 url=self.tool_identifier,
                 path=self.kwargs.get("path") if self.kwargs else None,
+                auth=self.kwargs.get("auth") if self.kwargs else None,
             )
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
