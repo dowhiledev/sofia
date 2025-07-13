@@ -102,6 +102,19 @@ class DecisionExample(BaseModel):
         return self._ctx_embedding
 
 
+class StepOverrides(BaseModel):
+    """
+    Represents overrides for a step's configuration.
+
+    Attributes:
+        persona (Optional[str]): Override for the persona.
+        llm (Optional[LLMConfig]): Override for the LLM configuration.
+    """
+
+    persona: Optional[str] = None
+    llm: str = "global"
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -135,6 +148,7 @@ class Step(BaseModel):
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
+    overrides: Optional[StepOverrides] = None
     examples: Optional[List[DecisionExample]] = Field(
         None, validation_alias="eg", serialization_alias="eg"
     )
@@ -193,6 +207,24 @@ class Step(BaseModel):
         :return: List of target step IDs.
         """
         return [route.target for route in self.routes]
+
+    @property
+    def persona(self) -> Optional[str]:
+        """
+        Get the persona override for this step.
+
+        :return: Persona string if available, otherwise None.
+        """
+        return self.overrides.persona if self.overrides else None
+
+    @property
+    def llm(self) -> str:
+        """
+        Get the LLM override for this step.
+
+        :return: LLM Id.
+        """
+        return self.overrides.llm if self.overrides else "global"
 
     @property
     def tool_ids(self) -> List[str]:

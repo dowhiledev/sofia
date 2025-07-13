@@ -25,7 +25,7 @@ from .constants import (
     WARNING_COLOR,
 )
 from .core import Agent
-from .llms import LLMConfig
+from .llms import LLMConfig, OpenAI
 from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
@@ -575,8 +575,15 @@ def validate(
             info_table.add_row("Max Examples", str(agent_config.max_examples))
 
             if agent_config.llm:
-                info_table.add_row("LLM Provider", agent_config.llm.provider)
-                info_table.add_row("LLM Model", agent_config.llm.model)
+                if isinstance(agent_config.llm, dict):
+                    info_table.add_row("LLM", "Multiple LLMs configured")
+                    for llm_id, llm_config in agent_config.llm.items():
+                        info_table.add_row(llm_id)
+                        info_table.add_row("⮑ Provider", llm_config.provider)
+                        info_table.add_row("⮑ Model", llm_config.model)
+                else:
+                    info_table.add_row("LLM Provider", agent_config.llm.provider)
+                    info_table.add_row("LLM Model", agent_config.llm.model)
             else:
                 info_table.add_row("LLM", "Using default (OpenAI)")
 
@@ -1062,7 +1069,9 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         flow_memory_context = (
             res.state.flow_state.flow_memory_context if res.state.flow_state else None
         )
-        context_summary = config.get_llm().generate_summary(
+        llms = config.get_llm() or {}
+        llm = llms.get("global") or OpenAI()
+        context_summary = llm.generate_summary(
             flow_memory_context[:-1]
             if flow_memory_context and len(flow_memory_context) > 1
             else res.state.history[:-1]
