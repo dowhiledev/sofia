@@ -16,7 +16,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from .tool import Tool
+    from ..models.tool import Tool
 
 
 class MCPTool(BaseModel):

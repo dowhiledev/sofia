@@ -19,28 +19,10 @@ from typing import (
 from docstring_parser import parse
 from pydantic import BaseModel, ValidationError
 
+from ..tools.api import APITool, APIWrapper
+from ..tools.mcp import MCPServer
+from ..tools.models import ToolDef
 from ..utils.utils import create_base_model, parse_type
-from .mcp import MCPServer
-
-
-class ArgDef(BaseModel):
-    """Documentation for an argument of a tool."""
-
-    key: str  # Name of the argument
-    desc: Optional[str] = None  # Description of the argument
-    type: Optional[str] = (
-        None  # Type of the argument (e.g., "str", "int", "float", "bool", "List[str]", etc.)
-    )
-
-    def get_type(self) -> Optional[Type]:
-        return parse_type(self.type) if self.type else None
-
-
-class ToolDef(BaseModel):
-    """Documentation for a tool."""
-
-    desc: Optional[str] = None  # Description of the tool
-    args: List[ArgDef]  # Argument descriptions for the tool
 
 
 class Tool(BaseModel):
@@ -373,7 +355,7 @@ class ToolWrapper(BaseModel):
 
     def get_tool(
         self, tool_defs: Optional[Dict[str, ToolDef]] = None
-    ) -> Union["Tool", "MCPServer"]:
+    ) -> Union["Tool", List["Tool"], "MCPServer"]:
         """
         Get a Tool instance from the tool identifier.
 
@@ -396,6 +378,13 @@ class ToolWrapper(BaseModel):
                 path=self.kwargs.get("path") if self.kwargs else None,
                 auth=self.kwargs.get("auth") if self.kwargs else None,
             )
+        if self.tool_type == "api":
+            return APIWrapper(
+                name=self.name,
+                identifier=self.tool_identifier,
+                map=self.map,
+                tool_defs=tool_defs,
+            ).tools
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
         #         name=self.name, tool=self.tool_identifier, tool_kwargs=self.kwargs
@@ -424,7 +413,12 @@ def get_tools(
         if isinstance(tool, ToolWrapper):
             _tool = tool.get_tool(tool_defs)
         assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
-        tool_name = _tool.id if isinstance(_tool, ToolWrapper) else _tool.name
+        if isinstance(_tool, list):
+            for t in _tool:
+                if isinstance(t, APITool):
+                    _tools[t.name] = Tool.from_api_tool(t, tool_defs)
+            continue
+        tool_name = _tool.id if isinstance(_tool, MCPServer) else _tool.name
         _tools[tool_name] = _tool
     return _tools
 
