@@ -324,6 +324,21 @@ llm:
 
 </CodeGroup>
 
+### Multiple llms
+
+Multiple LLMs can be defined
+
+```yaml
+llm:
+  global:
+    provider: anthropic
+    model: claude-3-5-sonnet-20241022
+  coding:
+    provider: anthropic
+    model: claude-opus-4-20250514
+```
+
+
 ## Troubleshooting
 
 <AccordionGroup>
