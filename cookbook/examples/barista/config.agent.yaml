@@ -103,18 +103,6 @@ flows:
 tools:
   tool_files:
     - barista_tools.py
-  external_tools:
-    - tag: "@api/GET/http://localhost:8000/get_available_coffee_options"
-      name: get_available_coffee_options
-      headers:
-        - key: "Content-Type"
-          value: "application/json"
-    - tag: "@api/http://localhost:8000" #(need to be a api with openapi spec)
-      tool_map:
-        add_to_cart: "/add_to_cart"
-        remove_item: "/remove_item"
-        finalize_order: "/finalize_order"
-        get_order_summary: "/get_order_summary"
   tool_defs:
     add_to_cart:
       args:

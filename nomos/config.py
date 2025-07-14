@@ -102,9 +102,19 @@ class ExternalTool(BaseModel):
 class ToolsConfig(BaseModel):
     """Configuration for tools used by the agent."""
 
-    tool_files: List[str] = []  # List of tool files to load
-    external_tools: Optional[List[ExternalTool]] = None  # List of external tools
-    tool_defs: Optional[Dict[str, ToolDef]] = None
+    tool_files: List[str] = Field(
+        default_factory=list,
+        validation_alias="files",
+        serialization_alias="files"
+    )
+    external_tools: Optional[List[ExternalTool]] = Field(
+        None, validation_alias="ext", serialization_alias="ext"
+    )  # List of external tools
+    tool_defs: Optional[Dict[str, ToolDef]] = Field(
+        None, validation_alias="defs", serialization_alias="defs"
+    )
+
+    model_config = {"populate_by_name": True}
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
         """
