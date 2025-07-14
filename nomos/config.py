@@ -70,6 +70,9 @@ class ExternalTool(BaseModel):
     kwargs: Optional[Dict[str, Union[str, int, float]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
+    map: Optional[Dict[str, str]] = (
+        None  # Optional mapping of method names to API endpoints (for API tools)
+    )
 
     def get_tool_wrapper(self) -> ToolWrapper:
         """
@@ -88,14 +91,16 @@ class ExternalTool(BaseModel):
             "crewai",
             "langchain",
             "mcp",
+            "api",
         ], (
-            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
+            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp', 'langchain', and 'api'."
         )
         return ToolWrapper(
             name=name,
             tool_type=tool_type,
             tool_identifier=tool_name,
             kwargs=self.kwargs,
+            map=self.map,
         )
 
 
@@ -103,9 +108,7 @@ class ToolsConfig(BaseModel):
     """Configuration for tools used by the agent."""
 
     tool_files: List[str] = Field(
-        default_factory=list,
-        validation_alias="files",
-        serialization_alias="files"
+        default_factory=list, validation_alias="files", serialization_alias="files"
     )
     external_tools: Optional[List[ExternalTool]] = Field(
         None, validation_alias="ext", serialization_alias="ext"

@@ -353,10 +353,11 @@ class InvalidArgumentsError(Exception):
 class ToolWrapper(BaseModel):
     """Represents a wrapper for a tool."""
 
-    tool_type: Literal["pkg", "crewai", "langchain", "mcp"]
+    tool_type: Literal["pkg", "crewai", "langchain", "mcp", "api"]
     tool_identifier: str
     name: str
     kwargs: Optional[dict] = None
+    map: Optional[Dict[str, str]] = None
 
     @property
     def id(self) -> str:
