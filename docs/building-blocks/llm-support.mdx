@@ -324,6 +324,21 @@ llm:
 
 </CodeGroup>
 
+### Multiple LLMs
+
+Multiple LLMs can be defined to use different models for specific purposes. For example, you might configure one model optimized for coding tasks and another for general conversation. This flexibility allows you to tailor the behavior of your application to different use cases, improving efficiency and user experience.
+
+```yaml
+llm:
+  global:
+    provider: anthropic
+    model: claude-3-5-sonnet-20241022
+  coding:
+    provider: anthropic
+    model: claude-opus-4-20250514
+```
+
+
 ## Troubleshooting
 
 <AccordionGroup>

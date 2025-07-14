@@ -146,6 +146,19 @@ Tools can be conditionally available based on context:
       condition: Issue requires regional manager
 ```
 
+### Overrides
+
+Steps can override certain configurations for optimal usage:
+
+```yaml
+- step_id: code_generation
+  description: |
+    Generate code
+  overrides:
+    persona: You are a coding assistant.
+    llm: coding
+```
+
 ## Step Transitions and Routing
 
 ### Route Conditions
