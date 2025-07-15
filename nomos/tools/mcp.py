@@ -153,4 +153,4 @@ class MCPServer(BaseModel):
         params = kwargs.copy() if kwargs else {}
         async with client:
             res = await client.call_tool(tool_name, params)
-            return [r.text for r in res if r.type == "text"]
+            return [r.text for r in res.content if r.type == "text"]

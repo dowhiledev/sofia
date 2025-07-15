@@ -87,7 +87,9 @@ class TestMCPServer:
         }
 
         # Mock the call to the tool
-        mock_client.call_tool.return_value = [call_tool_result]
+        mock_result = MagicMock()
+        mock_result.content = [call_tool_result]
+        mock_client.call_tool.return_value = mock_result
 
         auth_key = "test_auth_key"
         server = MCPServer(name="server", url="https://example.com", auth=auth_key)
