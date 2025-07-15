@@ -33,7 +33,6 @@ class APITool(BaseModel):
                 del kwargs[param]
             else:
                 raise ValueError(f"Missing required parameter: {param}")
-        print(f"Running API tool: {self.name} with URL: {url_copy} and method: {self.method}")
         response = requests.request(
             method=self.method,
             url=url_copy,

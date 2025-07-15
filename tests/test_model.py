@@ -41,7 +41,7 @@ class TestMCPServer:
         assert server2.url_path == "https://example.com/mcp"
 
     @pytest.mark.asyncio
-    @patch("nomos.models.mcp.Client")
+    @patch("nomos.tools.mcp.Client")
     async def test_list_tools_async(self, mock_client_class):
         """Test asynchronous list_tools_async method."""
         # Mock the client and its methods
@@ -73,7 +73,7 @@ class TestMCPServer:
         }
 
     @pytest.mark.asyncio
-    @patch("nomos.models.mcp.Client")
+    @patch("nomos.tools.mcp.Client")
     async def test_call_tool_async(self, mock_client_class, call_tool_result):
         """Test asynchronous call_tool_async method."""
         # Mock the client and its methods
@@ -101,7 +101,7 @@ class TestMCPServer:
 
 
 class TestTool:
-    @patch("nomos.models.mcp.MCPServer.get_tools")
+    @patch("nomos.tools.mcp.MCPServer.get_tools")
     def test_from_mcp_server(self, mock_get_tools):
         """Test Tool.from_mcp_server method."""
         server_name = "test_server"

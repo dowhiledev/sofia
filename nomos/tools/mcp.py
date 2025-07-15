@@ -60,7 +60,7 @@ class MCPServer(BaseModel):
 
         :return: The unique identifier for the MCP server.
         """
-        return f"@mcp/{self.name}"
+        return self.name
 
     @property
     def url_path(self) -> str:

@@ -687,16 +687,19 @@ class Agent:
                         f"Route target {route.target} not found in steps for step {step.step_id}"
                     )
 
-        print(self.tools.keys())
         # Validate tool names
         for step in self.steps.values():
             # check if the step.available tools is subset of the session tools
             if not set(step.available_tools).issubset(set(self.tools.keys())):
-                err_msg = (
-                    f"Step {step.step_id} has available tools that are not defined in agent tools"
-                )
+                err_msg = f"Step {step.step_id} has tools that are not defined in agent tools"
                 log_error(err_msg)
                 raise ValueError(err_msg)
+
+        # Go through all the steps and if there are examples in them, perform batch embedding
+        for step in self.steps.values():
+            if step.examples:
+                log_debug(f"Step {step.step_id} has examples, performing batch embedding")
+                step.batch_embed_examples(embedding_model=self.embedding_model)
 
     @classmethod
     def from_config(
