@@ -379,19 +379,71 @@ tools:
     - "tools.my_tools"             # Package path
 
   external_tools:
+    # Python package tools
     - tag: "@pkg/itertools.combinations"
       name: "combinations"
+
+    # CrewAI tools
     - tag: "@crewai/FileReadTool"
       name: "file_read_tool"
+
+    # LangChain tools
     - tag: "@langchain/google_search"
       name: "google_search"
+
+    # MCP tools
     - tag: '@mcp/https://gitmcp.io/dowhiledev/nomos'
       name: gitmcp
 
-  tool_arg_descriptions:
+    # API tools - Single endpoint
+    - tag: "@api/GET/https://api.github.com/users/{username}"
+      name: "get_github_user"
+
+    # API tools - Multiple endpoints
+    - tag: "@api/https://jsonplaceholder.typicode.com"
+      name: "posts_api"
+      map:
+        get_posts: "GET/posts"
+        get_post: "GET/posts/{id}"
+        create_post: "POST/posts"
+        update_post: "PUT/posts/{id}"
+        delete_post: "DELETE/posts/{id}"
+      headers:
+        Authorization: "Bearer ${API_TOKEN}"
+
+  tool_defs:
     add_to_cart:
-      coffee_type: "Coffee type (e.g., Espresso, Latte)"
-      size: "Size (Small, Medium, Large)"
+      desc: "Add item to cart"
+      args:
+        - key: coffee_type
+          desc: "Type of coffee (e.g., Espresso, Latte)"
+          type: str
+        - key: size
+          desc: "Size (Small, Medium, Large)"
+          type: str
+
+    get_github_user:
+      desc: "Get GitHub user information"
+      args:
+        - key: username
+          desc: "GitHub username"
+          type: str
+        - key: per_page
+          desc: "Number of results per page"
+          type: int
+          default: 30
+
+    get_posts:
+      desc: "Get all posts from API"
+      args:
+        - key: page
+          desc: "Page number"
+          type: int
+          default: 1
+        - key: limit
+          desc: "Number of posts per page"
+          type: int
+          default: 10
 ```
 
 ### Custom Tool Files

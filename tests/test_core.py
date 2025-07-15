@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -56,6 +56,48 @@ def test_pkg_tool_registration(basic_agent):
     assert len(session.tools) == 3
     assert "combinations" in session.tools
     assert session.tools["combinations"].name == "combinations"
+
+
+def test_api_tool_registration(basic_agent):
+    """Test that API tools are properly registered."""
+
+    # Create an API tool wrapper
+    api_wrapper = ToolWrapper(
+        tool_type="api",
+        name="test_api",
+        tool_identifier="GET/https://api.example.com/users",
+    )
+
+    # Create custom steps that reference the API tool
+    steps = [
+        Step(
+            step_id="start",
+            description="Start step with API tool",
+            routes=[Route(target="end", condition="Task completed")],
+            available_tools=["test_api"],
+        ),
+        Step(step_id="end", description="End step", routes=[], available_tools=[]),
+    ]
+
+    # Create a new agent with the API tool
+    config = AgentConfig(
+        name="api_test_agent",
+        persona="API test persona",
+        steps=steps,
+        start_step_id="start",
+        tools=ToolsConfig(tool_defs={}),
+    )
+
+    agent = Agent.from_config(
+        config=config,
+        llm=basic_agent.llm,
+        tools=[api_wrapper],
+    )
+
+    session = agent.create_session()
+    assert len(session.tools) == 1
+    assert "test_api" in session.tools
+    assert session.tools["test_api"].name == "test_api"
 
 
 def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_defs):
@@ -195,6 +237,89 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
 
     # Tool usage
     session.next("Use the tool", return_tool=True)
+
+    # Verify tool message in history
+    messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
+    assert any(msg.type == "tool" for msg in messages)
+
+
+@patch("requests.request")
+def test_api_tool_usage(mock_request, basic_agent, test_tool_0, test_tool_1, tool_defs):
+    """Test that the agent can properly use API tools."""
+    # Mock the HTTP response
+    mock_response = Mock()
+    mock_response.text = '{"users": [{"id": 1, "name": "John"}]}'
+    mock_request.return_value = mock_response
+
+    # Create an API tool wrapper
+    api_wrapper = ToolWrapper(
+        tool_type="api",
+        name="get_users",
+        tool_identifier="GET/https://api.example.com/users",
+    )
+
+    # Create custom steps that reference the API tool
+    steps = [
+        Step(
+            step_id="start",
+            description="Start step with API tool",
+            routes=[Route(target="end", condition="Task completed")],
+            available_tools=["get_users"],
+        ),
+        Step(step_id="end", description="End step", routes=[], available_tools=[]),
+    ]
+
+    # Create a new agent with the API tool
+    config = AgentConfig(
+        name="api_test_agent",
+        persona="API test persona",
+        steps=steps,
+        start_step_id="start",
+        tools=ToolsConfig(tool_defs={}),
+    )
+
+    agent = Agent.from_config(
+        config=config,
+        llm=basic_agent.llm,
+        tools=[api_wrapper],
+    )
+
+    session = agent.create_session()
+
+    # Create response models with API tool
+    tool_model = agent.llm._create_decision_model(
+        current_step=session.current_step,
+        current_step_tools=tuple(session.tools.values()),
+    )
+
+    # Set up mock responses
+    tool_response = tool_model(
+        reasoning=["Need to get users from API"],
+        action=Action.TOOL_CALL.value,
+        tool_call={
+            "tool_name": "get_users",
+            "tool_kwargs": {},
+        },
+    )
+
+    session.llm.set_response(tool_response)
+
+    # Tool usage
+    result = session.next("Get users from API", return_tool=True)
+
+    # Verify the tool was called
+    assert result.decision.action == Action.TOOL_CALL
+    assert result.decision.tool_call.tool_name == "get_users"
+    assert result.tool_output == '{"users": [{"id": 1, "name": "John"}]}'
+
+    # Verify HTTP request was made
+    mock_request.assert_called_once_with(
+        method="GET",
+        url="https://api.example.com/users",
+        json=None,
+        headers={},
+        params={},
+    )
 
     # Verify tool message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Event)]
