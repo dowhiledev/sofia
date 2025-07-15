@@ -50,7 +50,7 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 |----------|-------------|
 | **Multi-step Workflows** | Complex, stateful interactions with specialized tools and intelligent routing |
 | **Rapid Prototyping** | No-code Playground → YAML config → Full Python implementation |
-| **Tool Integration** | Python functions, CrewAI, LangChain tools with auto-documentation |
+| **Tool Integration** | Python functions, CrewAI, LangChain tools, External APIs with auto-documentation |
 | **Production Deployment** | Built-in session management, error handling, and monitoring |
 
 ## NOMOS Ecosystem
@@ -59,7 +59,7 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 |-----------|-------------|------|
 | **Playground** | Drag-and-drop flow designer for rapid prototyping | [Try it live →](https://nomos-builder.vercel.app/) |
 | **TypeScript SDK** | Full-featured client library for web and Node.js | [Documentation →](support/ts-sdk/README.md) |
-| **Docker Images** | Pre-configured containers with Redis, PostgreSQL support (GitHub Packages + Docker Hub) | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
+| **Docker Images** | Pre-configured containers with Redis, PostgreSQL support (GitHub Packages) | [Deployment Guide →](docs/md/deployment.md#docker-base-image) |
 | **CLI Tools** | Complete toolkit: `init`, `run`, `serve`, `test`, `validate`, `schema` | [CLI Reference →](docs/md/cli-usage.md) |
 
 ## Key Features
@@ -72,9 +72,10 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 | **Development** | Multiple Config Options | Python API or declarative YAML configuration |
 | | Playground | Drag-and-drop interface for designing flows **[Try it live →](https://nomos-builder.vercel.app/)** |
 | | Interactive CLI | Bootstrap agents with `nomos init`, run with `nomos run` |
-| **Tools & Integration** | Tool Integration | Register Python functions, packages, CrewAI, or LangChain tools |
+| **Tools & Integration** | Tool Integration | Register Python functions, packages, CrewAI, External APIs or LangChain tools |
 | | Auto Documentation | Tool descriptions generated from docstrings |
 | | External Packages | Reference any Python package function via configuration |
+| | External API Tools | Use any REST API with ease (No wrapping needed.) |
 | **LLM Support** | Multiple Providers | OpenAI, Mistral, Gemini, Ollama, and HuggingFace |
 | | Structured Responses | Step-level answer models for JSON/object responses |
 | | Persona-driven | Consistent, branded agent responses |
