@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from nomos.models.agent import Step, StepOverrides
-from nomos.tools.mcp import MCPServer
 from nomos.models.tool import Tool
+from nomos.tools.mcp import MCPServer
 from nomos.utils.utils import create_base_model
 
 

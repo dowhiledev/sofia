@@ -21,7 +21,9 @@ from nomos.models.agent import (
     StepOverrides,
     Summary,
 )
-from nomos.models.tool import ArgDef, MCPServer, Tool, ToolDef, ToolWrapper
+from nomos.models.tool import Tool, ToolWrapper
+from nomos.tools.mcp import MCPServer
+from nomos.tools.models import ArgDef, ToolDef
 
 
 def test_agent_initialization(basic_agent):

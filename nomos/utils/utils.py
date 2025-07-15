@@ -94,6 +94,7 @@ def parse_type(type_str: str) -> type:
         "Tuple": Tuple,
         "Union": Union,
         "Literal": Literal,
+        "Optional": Optional,
         "integer": int,
         "string": str,
         "boolean": bool,

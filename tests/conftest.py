@@ -16,7 +16,8 @@ from nomos.models.agent import (
     Route,
     Step,
 )
-from nomos.models.tool import ArgDef, ToolDef, ToolWrapper
+from nomos.models.tool import ToolWrapper
+from nomos.tools.models import ArgDef, ToolDef
 from nomos.utils.logging import log_error
 
 

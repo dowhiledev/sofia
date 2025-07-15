@@ -55,6 +55,15 @@ class Tool(BaseModel):
         """Get the hash of the Tool instance based on its name."""
         return hash(self.name)
 
+    @property
+    def id(self) -> str:
+        """
+        Get the unique identifier for the tool.
+
+        :return: The unique identifier for the tool.
+        """
+        return self.name
+
     @classmethod
     def from_function(
         cls,
@@ -91,6 +100,8 @@ class Tool(BaseModel):
                     "description": arg.desc or tool_arg_defs.get(arg.key, {}).get("description"),
                     "type": arg.type or tool_arg_defs.get(arg.key, {}).get("type"),
                 }
+                if arg.default is not None:
+                    tool_arg_defs[arg.key]["default"] = arg.default
 
         params = {}
         for _name, param in sig.parameters.items():
@@ -219,6 +230,27 @@ class Tool(BaseModel):
             tools.append(tool)
 
         return tools
+
+    @classmethod
+    def from_api_tool(
+        cls, api_tool: APITool, tool_defs: Optional[Dict[str, ToolDef]] = None
+    ) -> "Tool":
+        """
+        Create a Tool instance from an API tool.
+
+        :param api_tool: The APITool instance.
+        :param tool_defs: Optional dictionary of tool definitions for argument descriptions.
+        :return: An instance of Tool.
+        """
+        tool_def = tool_defs.get(api_tool.name) if tool_defs else None
+        description = (tool_def.desc if tool_def else None) or ""
+        params = tool_def.get_args() if tool_def else {}
+        return cls(
+            name=api_tool.name,
+            description=description,
+            function=api_tool.run,
+            parameters=params,
+        )
 
     def get_args_model(self) -> Type[BaseModel]:
         """
@@ -379,12 +411,13 @@ class ToolWrapper(BaseModel):
                 auth=self.kwargs.get("auth") if self.kwargs else None,
             )
         if self.tool_type == "api":
-            return APIWrapper(
+            api_tools = APIWrapper(
                 name=self.name,
                 identifier=self.tool_identifier,
                 map=self.map,
                 tool_defs=tool_defs,
             ).tools
+            return [Tool.from_api_tool(api_tool=tool, tool_defs=tool_defs) for tool in api_tools]
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
         #         name=self.name, tool=self.tool_identifier, tool_kwargs=self.kwargs
@@ -397,7 +430,7 @@ class ToolWrapper(BaseModel):
 def get_tools(
     tools: Optional[list[Union[Callable, ToolWrapper]]],
     tool_defs: Optional[Dict[str, ToolDef]] = None,
-) -> dict[str, Tool]:
+) -> dict[str, Union[Tool, MCPServer]]:
     """
     Get a list of Tool instances from a list of functions or tool identifiers.
 
@@ -405,9 +438,9 @@ def get_tools(
     :param tool_defs: Optional dictionary of tool definitions for argument descriptions.
     :return: A dictionary mapping tool names to Tool instances.
     """
-    _tools: dict[str, Tool] = {}
+    _tools: dict[str, Union[Tool, MCPServer]] = {}
     for tool in tools or []:
-        _tool = None
+        _tool: Optional[Union[Tool, List[Tool], MCPServer]] = None
         if callable(tool):
             _tool = Tool.from_function(tool, tool_defs)
         if isinstance(tool, ToolWrapper):
@@ -415,8 +448,7 @@ def get_tools(
         assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
         if isinstance(_tool, list):
             for t in _tool:
-                if isinstance(t, APITool):
-                    _tools[t.name] = Tool.from_api_tool(t, tool_defs)
+                _tools[t.name] = t
             continue
         tool_name = _tool.id if isinstance(_tool, MCPServer) else _tool.name
         _tools[tool_name] = _tool

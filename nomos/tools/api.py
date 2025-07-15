@@ -1,7 +1,9 @@
 """API as a tool for Nomos."""
 
-from typing import Callable, Dict, Optional, List, TYPE_CHECKING
+import re
+from typing import Dict, List, Optional
 
+import requests
 from pydantic import BaseModel
 
 from .models import ToolDef
@@ -13,7 +15,34 @@ class APITool(BaseModel):
     """Represents an API tool."""
 
     name: str
-    fn: Callable
+    url: str
+    method: str
+    headers: Optional[Dict[str, str]] = None
+
+    def run(self, **kwargs) -> str:
+        """Run the API tool."""
+        body = kwargs.pop("body", None)
+        headers = self.headers or {}
+        if body is not None:
+            headers["Content-Type"] = "application/json"
+        url_params = re.findall(r"\{([^}]+)\}", self.url)
+        url_copy = self.url
+        for param in url_params:
+            if param in kwargs:
+                url_copy = url_copy.replace(f"{{{param}}}", str(kwargs[param]))
+                del kwargs[param]
+            else:
+                raise ValueError(f"Missing required parameter: {param}")
+        print(f"Running API tool: {self.name} with URL: {url_copy} and method: {self.method}")
+        response = requests.request(
+            method=self.method,
+            url=url_copy,
+            json=body,
+            headers=headers,
+            params=kwargs,
+        )
+        response.raise_for_status()
+        return response.text
 
 
 class APIWrapper(BaseModel):
@@ -27,17 +56,23 @@ class APIWrapper(BaseModel):
         """Return a list of  api tools defined in the API."""
         method, url = self.split_url(self.identifier)
         if method:
-            # TODO: Handle method-specific logic if needed
-            return [APITool()]
+            assert method in METHODS, f"Invalid method '{method}' in identifier '{self.identifier}'"
+            return [APITool(name=self.name, url=url, method=method)]
         tools = []
+        assert self.map is not None, "API map must be defined"
         for tool_name, endpoint in self.map.items():
             method, endpoint = self.split_url(endpoint)
-            url = f"{url}/{endpoint}"
-            tools.append(APITool(name=tool_name, fn=lambda: None))
+            assert method is not None and method in METHODS, (
+                f"Invalid method '{method}' in endpoint '{endpoint}'"
+            )
+            _url = f"{url}/{endpoint}"
+            tools.append(APITool(name=tool_name, url=_url, method=method))
+        return tools
 
     @staticmethod
     def split_url(url: str) -> tuple[Optional[str], str]:
         """Split a URL into its method (if any) and the base URL."""
+        url = url.lstrip("/")
         method, rest = url.split("/", 1)
         method = method.upper()
         if method in METHODS:
