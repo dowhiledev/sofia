@@ -70,6 +70,9 @@ class ExternalTool(BaseModel):
     kwargs: Optional[Dict[str, Union[str, int, float]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
+    map: Optional[Dict[str, str]] = (
+        None  # Optional mapping of method names to API endpoints (for API tools)
+    )
 
     def get_tool_wrapper(self) -> ToolWrapper:
         """
@@ -81,30 +84,46 @@ class ExternalTool(BaseModel):
         tool_type = tool_type.replace("@", "")
         if tool_type == "mcp" and not self.name:
             raise ValueError("For MCP tools, the 'name' field is required.")
-
-        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
+        assert not (tool_type == "api" and not self.map and not self.name), (
+            "For Direct API tools, the 'name' field is required."
+        )
+        name = (
+            self.name
+            or ("Multi-Endpoint API Tool" if self.map else None)
+            or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
+        )
         assert tool_type in [
             "pkg",
             "crewai",
             "langchain",
             "mcp",
+            "api",
         ], (
-            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
+            f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp', 'langchain', and 'api'."
         )
         return ToolWrapper(
             name=name,
             tool_type=tool_type,
             tool_identifier=tool_name,
             kwargs=self.kwargs,
+            map=self.map,
         )
 
 
 class ToolsConfig(BaseModel):
     """Configuration for tools used by the agent."""
 
-    tool_files: List[str] = []  # List of tool files to load
-    external_tools: Optional[List[ExternalTool]] = None  # List of external tools
-    tool_defs: Optional[Dict[str, ToolDef]] = None
+    tool_files: List[str] = Field(
+        default_factory=list, validation_alias="files", serialization_alias="files"
+    )
+    external_tools: Optional[List[ExternalTool]] = Field(
+        None, validation_alias="ext", serialization_alias="ext"
+    )  # List of external tools
+    tool_defs: Optional[Dict[str, ToolDef]] = Field(
+        None, validation_alias="defs", serialization_alias="defs"
+    )
+
+    model_config = {"populate_by_name": True}
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
         """

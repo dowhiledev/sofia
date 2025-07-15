@@ -16,7 +16,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from .tool import Tool
+    from ..models.tool import Tool
 
 
 class MCPTool(BaseModel):
@@ -60,7 +60,7 @@ class MCPServer(BaseModel):
 
         :return: The unique identifier for the MCP server.
         """
-        return f"@mcp/{self.name}"
+        return self.name
 
     @property
     def url_path(self) -> str:
@@ -153,4 +153,4 @@ class MCPServer(BaseModel):
         params = kwargs.copy() if kwargs else {}
         async with client:
             res = await client.call_tool(tool_name, params)
-            return [r.text for r in res if r.type == "text"]
+            return [r.text for r in res.content if r.type == "text"]

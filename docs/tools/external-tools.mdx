@@ -1,8 +1,134 @@
 ---
 title: "External Tools"
-description: "Integrate Python packages, CrewAI tools, and LangChain tools directly"
+description: "Integrate Python packages, CrewAI tools, LangChain tools, and external APIs directly"
 icon: "puzzle"
 ---
+
+## External APIs as Tools
+
+NOMOS can directly integrate with external APIs as tools without requiring wrapper code:
+
+### YAML Configuration
+
+```yaml
+# config.agent.yaml
+tools:
+  external_tools:
+    # Single API endpoint
+    - tag: "@api/GET/https://api.github.com/users/{username}"
+      name: "get_github_user"
+
+    # Multiple endpoints with mapping
+    - tag: "@api/https://jsonplaceholder.typicode.com"
+      name: "jsonplaceholder_api"
+      map:
+        get_posts: "GET/posts"
+        get_post: "GET/posts/{id}"
+        create_post: "POST/posts"
+        update_post: "PUT/posts/{id}"
+        delete_post: "DELETE/posts/{id}"
+
+    # API with custom headers
+    - tag: "@api/GET/https://api.example.com/protected"
+      name: "protected_api"
+      headers:
+        Authorization: "Bearer ${API_TOKEN}"
+        Content-Type: "application/json"
+```
+
+### Python Usage
+
+```python
+from nomos import AgentConfig
+from nomos.config import ToolsConfig, ExternalTool
+
+config = AgentConfig(
+    name="api_agent",
+    tools=ToolsConfig(
+        external_tools=[
+            ExternalTool(
+                tag="@api/GET/https://api.github.com/users/{username}",
+                name="get_github_user"
+            ),
+            ExternalTool(
+                tag="@api/https://jsonplaceholder.typicode.com",
+                name="posts_api",
+                map={
+                    "get_posts": "GET/posts",
+                    "create_post": "POST/posts"
+                }
+            )
+        ]
+    ),
+    # ... other config
+)
+```
+
+### API Tool Features
+
+<CardGroup cols={2}>
+  <Card title="URL Parameters" icon="link">
+    Support for dynamic URL parameters like `{username}` and `{id}`
+  </Card>
+  <Card title="HTTP Methods" icon="arrows-rotate">
+    Support for GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+  </Card>
+  <Card title="Query Parameters" icon="filter">
+    Automatic handling of query parameters passed as tool arguments
+  </Card>
+  <Card title="Request Bodies" icon="code">
+    Support for JSON request bodies via the `body` parameter
+  </Card>
+  <Card title="Custom Headers" icon="shield">
+    Support for authentication and custom headers
+  </Card>
+  <Card title="Error Handling" icon="exclamation-triangle">
+    Automatic HTTP error handling with proper status codes
+  </Card>
+</CardGroup>
+
+### API Tool Examples
+
+```yaml
+# Weather API example
+- tag: "@api/GET/https://api.openweathermap.org/data/2.5/weather"
+  name: "get_weather"
+  headers:
+    Authorization: "Bearer ${WEATHER_API_KEY}"
+
+# REST API CRUD operations
+- tag: "@api/https://api.example.com/v1"
+  name: "user_management"
+  map:
+    list_users: "GET/users"
+    get_user: "GET/users/{id}"
+    create_user: "POST/users"
+    update_user: "PUT/users/{id}"
+    delete_user: "DELETE/users/{id}"
+  headers:
+    Authorization: "Bearer ${API_TOKEN}"
+```
+
+### Tool Parameter Definitions
+
+```yaml
+tools:
+  external_tools:
+    - tag: "@api/GET/https://api.github.com/users/{username}"
+      name: "get_github_user"
+
+  tool_defs:
+    get_github_user:
+      desc: "Get GitHub user information"
+      args:
+        - key: username
+          type: str
+          desc: "GitHub username"
+        - key: per_page
+          type: int
+          desc: "Number of results per page"
+          default: 30
+```
 
 ## Python Package Tools
 

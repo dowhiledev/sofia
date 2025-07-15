@@ -45,6 +45,13 @@ This section contains real-world examples demonstrating NOMOS capabilities acros
     Repository search and code analysis agent
   </Card>
   <Card
+    title="Master Roshi Agent"
+    icon="martial-arts"
+    href="https://github.com/dowhiledev/nomos/blob/main//cookbook/examples/master-roshi/"
+  >
+    Dragon Ball-themed training assistant with API tool integration
+  </Card>
+  <Card
     title="TypeScript SDK Example"
     icon="code"
     href="https://github.com/dowhiledev/nomos/blob/main//cookbook/examples/typescript-sdk-example/"
@@ -136,6 +143,35 @@ export OPENAI_API_KEY=your-api-key-here
 nomos run --config config.agent.yaml
 ```
 
+### Master Roshi Agent
+
+A Dragon Ball-themed training assistant demonstrating:
+
+<AccordionGroup>
+  <Accordion title="API Tool Integration">
+    REST API calls with URL parameters and query strings
+  </Accordion>
+  <Accordion title="External Data Sources">
+    Integration with Dragon Ball API for character information
+  </Accordion>
+  <Accordion title="Themed Interactions">
+    Character-specific responses and training advice
+  </Accordion>
+  <Accordion title="Tool Definition">
+    Custom tool definitions with argument validation
+  </Accordion>
+  <Accordion title="Real-time Data">
+    Dynamic character information retrieval
+  </Accordion>
+</AccordionGroup>
+
+**To run:**
+```bash
+cd cookbook/examples/master-roshi
+export OPENAI_API_KEY=your-api-key-here
+nomos run --config config.agent.yaml
+```
+
 ## Running Examples
 
 <Steps>
@@ -184,6 +220,7 @@ nomos run --config config.agent.yaml
     - **Tool Integration**: External API usage patterns
     - **Flow Management**: Complex workflow examples
     - **Error Handling**: Robust error management strategies
+    - **Master Roshi Agent**: API tool integration with external data sources
   </Tab>
 </Tabs>
 

@@ -19,28 +19,10 @@ from typing import (
 from docstring_parser import parse
 from pydantic import BaseModel, ValidationError
 
+from ..tools.api import APITool, APIWrapper
+from ..tools.mcp import MCPServer
+from ..tools.models import ToolDef
 from ..utils.utils import create_base_model, parse_type
-from .mcp import MCPServer
-
-
-class ArgDef(BaseModel):
-    """Documentation for an argument of a tool."""
-
-    key: str  # Name of the argument
-    desc: Optional[str] = None  # Description of the argument
-    type: Optional[str] = (
-        None  # Type of the argument (e.g., "str", "int", "float", "bool", "List[str]", etc.)
-    )
-
-    def get_type(self) -> Optional[Type]:
-        return parse_type(self.type) if self.type else None
-
-
-class ToolDef(BaseModel):
-    """Documentation for a tool."""
-
-    desc: Optional[str] = None  # Description of the tool
-    args: List[ArgDef]  # Argument descriptions for the tool
 
 
 class Tool(BaseModel):
@@ -72,6 +54,15 @@ class Tool(BaseModel):
     def __hash__(self) -> int:
         """Get the hash of the Tool instance based on its name."""
         return hash(self.name)
+
+    @property
+    def id(self) -> str:
+        """
+        Get the unique identifier for the tool.
+
+        :return: The unique identifier for the tool.
+        """
+        return self.name
 
     @classmethod
     def from_function(
@@ -109,6 +100,8 @@ class Tool(BaseModel):
                     "description": arg.desc or tool_arg_defs.get(arg.key, {}).get("description"),
                     "type": arg.type or tool_arg_defs.get(arg.key, {}).get("type"),
                 }
+                if arg.default is not None:
+                    tool_arg_defs[arg.key]["default"] = arg.default
 
         params = {}
         for _name, param in sig.parameters.items():
@@ -238,6 +231,27 @@ class Tool(BaseModel):
 
         return tools
 
+    @classmethod
+    def from_api_tool(
+        cls, api_tool: APITool, tool_defs: Optional[Dict[str, ToolDef]] = None
+    ) -> "Tool":
+        """
+        Create a Tool instance from an API tool.
+
+        :param api_tool: The APITool instance.
+        :param tool_defs: Optional dictionary of tool definitions for argument descriptions.
+        :return: An instance of Tool.
+        """
+        tool_def = tool_defs.get(api_tool.name) if tool_defs else None
+        description = (tool_def.desc if tool_def else None) or ""
+        params = tool_def.get_args() if tool_def else {}
+        return cls(
+            name=api_tool.name,
+            description=description,
+            function=api_tool.run,
+            parameters=params,
+        )
+
     def get_args_model(self) -> Type[BaseModel]:
         """
         Get the Pydantic model for the tool's arguments.
@@ -353,10 +367,11 @@ class InvalidArgumentsError(Exception):
 class ToolWrapper(BaseModel):
     """Represents a wrapper for a tool."""
 
-    tool_type: Literal["pkg", "crewai", "langchain", "mcp"]
+    tool_type: Literal["pkg", "crewai", "langchain", "mcp", "api"]
     tool_identifier: str
     name: str
     kwargs: Optional[dict] = None
+    map: Optional[Dict[str, str]] = None
 
     @property
     def id(self) -> str:
@@ -372,7 +387,7 @@ class ToolWrapper(BaseModel):
 
     def get_tool(
         self, tool_defs: Optional[Dict[str, ToolDef]] = None
-    ) -> Union["Tool", "MCPServer"]:
+    ) -> Union["Tool", List["Tool"], "MCPServer"]:
         """
         Get a Tool instance from the tool identifier.
 
@@ -395,6 +410,14 @@ class ToolWrapper(BaseModel):
                 path=self.kwargs.get("path") if self.kwargs else None,
                 auth=self.kwargs.get("auth") if self.kwargs else None,
             )
+        if self.tool_type == "api":
+            api_tools = APIWrapper(
+                name=self.name,
+                identifier=self.tool_identifier,
+                map=self.map,
+                tool_defs=tool_defs,
+            ).tools
+            return [Tool.from_api_tool(api_tool=tool, tool_defs=tool_defs) for tool in api_tools]
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
         #         name=self.name, tool=self.tool_identifier, tool_kwargs=self.kwargs
@@ -407,7 +430,7 @@ class ToolWrapper(BaseModel):
 def get_tools(
     tools: Optional[list[Union[Callable, ToolWrapper]]],
     tool_defs: Optional[Dict[str, ToolDef]] = None,
-) -> dict[str, Tool]:
+) -> dict[str, Union[Tool, MCPServer]]:
     """
     Get a list of Tool instances from a list of functions or tool identifiers.
 
@@ -415,15 +438,19 @@ def get_tools(
     :param tool_defs: Optional dictionary of tool definitions for argument descriptions.
     :return: A dictionary mapping tool names to Tool instances.
     """
-    _tools: dict[str, Tool] = {}
+    _tools: dict[str, Union[Tool, MCPServer]] = {}
     for tool in tools or []:
-        _tool = None
+        _tool: Optional[Union[Tool, List[Tool], MCPServer]] = None
         if callable(tool):
             _tool = Tool.from_function(tool, tool_defs)
         if isinstance(tool, ToolWrapper):
             _tool = tool.get_tool(tool_defs)
         assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
-        tool_name = _tool.id if isinstance(_tool, ToolWrapper) else _tool.name
+        if isinstance(_tool, list):
+            for t in _tool:
+                _tools[t.name] = t
+            continue
+        tool_name = _tool.id if isinstance(_tool, MCPServer) else _tool.name
         _tools[tool_name] = _tool
     return _tools
 

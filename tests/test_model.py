@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from nomos.models.agent import Step, StepOverrides
-from nomos.models.mcp import MCPServer
 from nomos.models.tool import Tool
+from nomos.tools.mcp import MCPServer
 from nomos.utils.utils import create_base_model
 
 
@@ -41,7 +41,7 @@ class TestMCPServer:
         assert server2.url_path == "https://example.com/mcp"
 
     @pytest.mark.asyncio
-    @patch("nomos.models.mcp.Client")
+    @patch("nomos.tools.mcp.Client")
     async def test_list_tools_async(self, mock_client_class):
         """Test asynchronous list_tools_async method."""
         # Mock the client and its methods
@@ -73,7 +73,7 @@ class TestMCPServer:
         }
 
     @pytest.mark.asyncio
-    @patch("nomos.models.mcp.Client")
+    @patch("nomos.tools.mcp.Client")
     async def test_call_tool_async(self, mock_client_class, call_tool_result):
         """Test asynchronous call_tool_async method."""
         # Mock the client and its methods
@@ -87,7 +87,9 @@ class TestMCPServer:
         }
 
         # Mock the call to the tool
-        mock_client.call_tool.return_value = [call_tool_result]
+        mock_result = MagicMock()
+        mock_result.content = [call_tool_result]
+        mock_client.call_tool.return_value = mock_result
 
         auth_key = "test_auth_key"
         server = MCPServer(name="server", url="https://example.com", auth=auth_key)
@@ -101,7 +103,7 @@ class TestMCPServer:
 
 
 class TestTool:
-    @patch("nomos.models.mcp.MCPServer.get_tools")
+    @patch("nomos.tools.mcp.MCPServer.get_tools")
     def test_from_mcp_server(self, mock_get_tools):
         """Test Tool.from_mcp_server method."""
         server_name = "test_server"

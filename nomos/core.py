@@ -45,9 +45,9 @@ class Session:
         memory: Memory,
         steps: Dict[str, Step],
         start_step_id: str,
+        tools: Dict[str, Tool],
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
         flows: Optional[List[Flow]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
@@ -94,11 +94,8 @@ class Session:
         )
         self.embedding_model = embedding_model
 
-        tool_defs = (
-            self.config.tools.tool_defs if self.config and self.config.tools.tool_defs else None
-        )
         self.deferred_tools: Dict[str, Tool] = {}
-        self.tools: Dict[str, Tool] = get_tools(tools, tool_defs)
+        self.tools: Dict[str, Tool] = tools
 
         # Compile state machine for fast transitions and flow lookups
         self.state_machine = StateMachine(
@@ -660,7 +657,7 @@ class Agent:
 
         # Remove duplicates of tools based on their names or IDs
         seen = set()
-        self.tools = []
+        _tools = []
         for tool in tools or []:
             tool_id = (
                 tool.name if isinstance(tool, ToolWrapper) else getattr(tool, "__name__", None)
@@ -668,7 +665,12 @@ class Agent:
             tool_id = tool_id or id(tool)  # Fallback to id if no name
             if tool_id not in seen:
                 seen.add(tool_id)
-                self.tools.append(tool)
+                _tools.append(tool)
+
+        del seen  # Clear the seen set to free memory
+
+        self.tools = get_tools(_tools, config.tools.tool_defs if config and config.tools else None)
+        del _tools  # Clear the temporary list to free memory
 
         # Validate start step ID
         if start_step_id not in self.steps:
@@ -684,19 +686,14 @@ class Agent:
                     raise ValueError(
                         f"Route target {route.target} not found in steps for step {step.step_id}"
                     )
+
         # Validate tool names
         for step in self.steps.values():
-            for step_tool in step.available_tools:
-                for tool in self.tools:
-                    if (isinstance(tool, ToolWrapper) and tool.id == step_tool) or (
-                        callable(tool) and getattr(tool, "__name__", None) == step_tool
-                    ):
-                        break
-                else:
-                    log_error(f"Tool {step_tool} not found in tools for step {step.step_id}")
-                    raise ValueError(
-                        f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
-                    )
+            # check if the step.available tools is subset of the session tools
+            if not set(step.available_tools).issubset(set(self.tools.keys())):
+                err_msg = f"Step {step.step_id} has tools that are not defined in agent tools"
+                log_error(err_msg)
+                raise ValueError(err_msg)
 
         # Go through all the steps and if there are examples in them, perform batch embedding
         for step in self.steps.values():
@@ -881,7 +878,7 @@ class Agent:
             raise ValueError("save_path must be provided if not in a notebook environment.")
 
         mm_code = create_mermaid_graph(
-            steps=self.steps, flows=self.flows if self.flows else [], tools=get_tools(self.tools)
+            steps=self.steps, flows=self.flows if self.flows else [], tools=self.tools
         )
         mermaid_svg(
             mm_code,
