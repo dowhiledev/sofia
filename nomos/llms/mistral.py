@@ -38,7 +38,6 @@ class Mistral(LLMBase):
         self.model = model
         self.embedding_model = embedding_model or "mistral-embed"
         api_key = os.environ["MISTRAL_API_KEY"]
-        print(kwargs)
         self.mistral_client = Mistral(api_key=api_key, **kwargs)
         self.client = from_mistral(
             client=self.mistral_client,
