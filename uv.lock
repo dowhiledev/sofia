@@ -1661,6 +1661,7 @@ mcp = [
     { name = "fastmcp" },
 ]
 mistralai = [
+    { name = "instructor" },
     { name = "mistralai" },
 ]
 ollama = [
@@ -1710,6 +1711,7 @@ requires-dist = [
     { name = "groq", marker = "extra == 'groq'", specifier = ">=0.29.0" },
     { name = "huggingface-hub", marker = "extra == 'huggingface'", specifier = ">=0.32.0" },
     { name = "instructor", marker = "extra == 'groq'", specifier = ">=1.9.2" },
+    { name = "instructor", marker = "extra == 'mistralai'", specifier = ">=1.9.2" },
     { name = "kafka-python", marker = "extra == 'serve'", specifier = ">=2.2.15" },
     { name = "loguru", specifier = ">=0.7.3,<0.8.0" },
     { name = "mistralai", marker = "extra == 'mistralai'", specifier = ">=1.7.0,<2.0.0" },
