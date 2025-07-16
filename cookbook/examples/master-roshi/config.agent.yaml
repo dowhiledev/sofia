@@ -74,5 +74,5 @@ tools:
           type: int
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: mistral
+  model: devstral-small-2507
