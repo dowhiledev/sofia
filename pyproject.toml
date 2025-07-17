@@ -63,16 +63,8 @@ cohere = [
     "cohere>=5.16.1",
 ]
 
-[project.scripts]
-nomos = "nomos.cli:main"
-
-[tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q --cov=nomos --cov-report=term-missing"
-testpaths = ["tests"]
-
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest (>=8.3.5,<9.0.0)",
     "pytest-cov (>=6.1.1,<7.0.0)",
     "pytest-asyncio (>=0.26.0,<0.27.0)",
@@ -80,6 +72,14 @@ dev-dependencies = [
     "ruff>=0.12.2",
     "pytest-xdist>=3.8.0",
 ]
+
+[project.scripts]
+nomos = "nomos.cli:main"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=nomos --cov-report=term-missing"
+testpaths = ["tests"]
 
 [tool.ruff]
 lint.extend-select = ["I"]
