@@ -41,6 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize security manager
     security_manager = SecurityManager(config.server.security)
+    print(security_manager)
 
     yield
     # Cleanup

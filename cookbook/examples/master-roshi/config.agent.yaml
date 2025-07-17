@@ -86,6 +86,3 @@ server:
 
     enable_rate_limiting: true
     rate_limit: "50/minute"
-
-    enable_csrf_protection: true
-    csrf_secret_key: "$CSRF_SECRET_KEY"

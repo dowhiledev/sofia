@@ -10,7 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .agent import config
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL") or config.session.database_url
+DATABASE_URL = os.getenv("DATABASE_URL") or config.server.session.database_url
 engine = create_async_engine(DATABASE_URL) if DATABASE_URL else None
 
 
