@@ -79,13 +79,20 @@ llm:
 
 
 server:
+  port: 8000
+  host: "0.0.0.0"
+  workers: 2
+
   security:
+    # Authentication - protect the Dragon Ball knowledge!
     enable_auth: true
     auth_type: jwt
     jwt_secret_key: "$JWT_SECRET_KEY"
 
+    # Rate limiting - even Master Roshi needs to pace himself
     enable_rate_limiting: true
-    rate_limit: "50/minute"
+    rate_limit: "50/minute"  # Moderate rate for training sessions
 
+    # CSRF protection - protect against evil attacks
     enable_csrf_protection: true
     csrf_secret_key: "$CSRF_SECRET_KEY"

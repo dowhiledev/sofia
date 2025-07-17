@@ -264,23 +264,24 @@ class AgentConfig(BaseSettings):
         """
         import yaml
 
+        def expand_env_vars(obj):
+            """Recursively expand environment variables in nested dictionaries and lists."""
+            if isinstance(obj, dict):
+                return {k: expand_env_vars(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [expand_env_vars(item) for item in obj]
+            elif isinstance(obj, str) and obj.startswith("$"):
+                # Extract environment variable name and get its value
+                env_var = obj[1:]  # Remove the $ prefix
+                return os.getenv(env_var, obj)  # Return original value if env var not found
+            else:
+                return obj
+
         with open(file_path, "r") as file:
             data = yaml.safe_load(file)
-        server_data = data.get("server", {})
-        if isinstance(server_data, dict):
-            expanded = {
-                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
-                for k, v in server_data.items()
-            }
-            data["server"] = expanded
 
-        session_data = data.get("session") or data.get("session_store")
-        if isinstance(session_data, dict):
-            expanded = {
-                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
-                for k, v in session_data.items()
-            }
-            data["session"] = expanded
+        # Expand environment variables in the entire configuration
+        data = expand_env_vars(data)
 
         return cls(**data)
 
