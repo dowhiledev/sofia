@@ -81,6 +81,9 @@ class SecurityManager:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="API key validation failed",
                 )
+        except HTTPException:
+            # Re-raise HTTPExceptions without wrapping them
+            raise
         except httpx.TimeoutException:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
