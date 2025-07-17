@@ -686,6 +686,19 @@ wheels = [
 ]
 
 [[package]]
+name = "fastapi-limiter"
+version = "0.1.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "redis" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7f/99/c7903234488d4dca5f9bccb4f88c2f582a234f0dca33348781c9cf8a48c6/fastapi_limiter-0.1.6.tar.gz", hash = "sha256:6f5fde8efebe12eb33861bdffb91009f699369a3c2862cdc7c1d9acf912ff443", size = 8307, upload-time = "2024-01-05T09:14:48.628Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/b5/6f6b4d18bee1cafc857eae12738b3a03b7d1102b833668be868938c57b9d/fastapi_limiter-0.1.6-py3-none-any.whl", hash = "sha256:2e53179a4208b8f2c8795e38bb001324d3dc37d2800ff49fd28ec5caabf7a240", size = 15829, upload-time = "2024-01-05T09:14:47.613Z" },
+]
+
+[[package]]
 name = "fastavro"
 version = "1.11.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1683,6 +1696,7 @@ openai = [
 serve = [
     { name = "asyncpg" },
     { name = "fastapi" },
+    { name = "fastapi-limiter" },
     { name = "kafka-python" },
     { name = "psycopg2-binary" },
     { name = "pyjwt" },
@@ -1716,6 +1730,7 @@ requires-dist = [
     { name = "colorama", specifier = ">=0.4.6,<0.5.0" },
     { name = "docstring-parser", specifier = ">=0.16,<0.17" },
     { name = "fastapi", marker = "extra == 'serve'", specifier = ">=0.115.12,<0.116.0" },
+    { name = "fastapi-limiter", marker = "extra == 'serve'", specifier = ">=0.1.6" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.7.1" },
     { name = "google-genai", marker = "extra == 'google'", specifier = ">=1.12.1,<2.0.0" },
     { name = "greenlet", specifier = ">=3.2.3" },

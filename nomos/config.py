@@ -64,7 +64,9 @@ class ServerSecurity(BaseModel):
 
     # Rate limiting configuration
     enable_rate_limiting: bool = False  # Flag to enable rate limiting
-    rate_limit: Optional[str] = None  # Rate limit configuration (e.g., "100/minute")
+    redis_url: Optional[str] = None  # Redis URL for rate limiting
+    rate_limit_times: Optional[int] = None  # Number of allowed requests per time period
+    rate_limit_seconds: Optional[int] = None  # Time period for rate limiting in seconds
 
     # CSRF protection configuration
     enable_csrf_protection: bool = False  # Flag to enable CSRF protection

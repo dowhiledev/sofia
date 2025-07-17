@@ -114,7 +114,9 @@ server:
 
     # Rate limiting
     enable_rate_limiting: false
-    rate_limit: "100/minute"
+    redis_url: "$REDIS_URL"  # Redis URL for rate limiting
+    rate_limit_times: 100  # Number of allowed requests
+    rate_limit_seconds: 60  # Time period for rate limiting in seconds
 
     # CSRF protection
     enable_csrf_protection: false
@@ -154,7 +156,9 @@ server:
 
     # Rate limiting configuration
     enable_rate_limiting: true
-    rate_limit: "100/minute"  # Format: "number/time_unit"
+    redis_url: "$REDIS_URL"  # Redis URL for rate limiting
+    rate_limit_times: 100  # Number of allowed requests
+    rate_limit_seconds: 60  # Time period for rate limiting in seconds
 
     # CSRF protection configuration
     enable_csrf_protection: true
@@ -232,7 +236,9 @@ server:
     auth_type: jwt
     jwt_secret_key: "$JWT_SECRET_KEY"
     enable_rate_limiting: true
-    rate_limit: "1000/hour"
+    redis_url: "$REDIS_URL"
+    rate_limit_times: 100
+    rate_limit_seconds: 60
     enable_csrf_protection: true
     csrf_secret_key: "$CSRF_SECRET_KEY"
     allowed_origins:

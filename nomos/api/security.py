@@ -157,11 +157,6 @@ def setup_security_middleware(app: FastAPI, security_config: ServerSecurity):
         allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
     )
 
-    # Setup rate limiting
-    if security_config.enable_rate_limiting:
-        # TODO: Implement custom rate limiting logic if needed
-        pass
-
     # Setup CSRF protection
     if security_config.enable_csrf_protection and security_config.csrf_secret_key:
         csrf_secret = security_config.csrf_secret_key

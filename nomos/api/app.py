@@ -5,10 +5,13 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-from fastapi import FastAPI, HTTPException, Request, status
+import redis.asyncio as redis
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
 
 from ..models.agent import Event, StepIdentifier, Summary
 from .agent import agent, config
@@ -25,6 +28,19 @@ security_manager: Optional[SecurityManager] = None
 
 BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
+deps = (
+    [
+        Depends(
+            RateLimiter(
+                times=config.server.security.rate_limit_times or 50,
+                seconds=config.server.security.rate_limit_seconds or 60,
+            )
+        )
+    ]
+    if config.server.security.enable_rate_limiting
+    else []
+)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -37,6 +53,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize security manager
     security_manager = SecurityManager(config.server.security)
+    # Setup FastAPI Limiter if rate limiting is enabled
+    redis_client: Optional[redis.Redis] = None
+    if config.server.security.enable_rate_limiting:
+        redis_url = config.server.security.redis_url
+        assert redis_url, "Redis URL must be provided for rate limiting"
+        redis_client = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+        await FastAPILimiter.init(redis_client)
 
     yield
 
@@ -44,6 +67,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await session_store.close()
     if security_manager:
         await security_manager.close()
+    if redis_client:
+        await FastAPILimiter.close()
 
 
 app = FastAPI(title=f"{config.name}-api", lifespan=lifespan)
@@ -116,7 +141,7 @@ if (
         return {"access_token": token, "token_type": "bearer"}
 
 
-@app.post("/session", response_model=SessionResponse)
+@app.post("/session", response_model=SessionResponse, dependencies=deps)
 async def create_session(
     request: Request,
     initiate: Optional[bool] = False,
@@ -143,7 +168,7 @@ async def create_session(
     )
 
 
-@app.post("/session/{id}/message", response_model=SessionResponse)
+@app.post("/session/{id}/message", response_model=SessionResponse, dependencies=deps)
 async def send_message(
     id: str,
     message: Message,
@@ -163,7 +188,7 @@ async def send_message(
     return SessionResponse(session_id=id, message=res.decision.model_dump(mode="json"))
 
 
-@app.delete("/session/{id}")
+@app.delete("/session/{id}", dependencies=deps)
 async def end_session(
     id: str,
     request: Request,
@@ -182,7 +207,7 @@ async def end_session(
     return {"message": "Session ended successfully"}
 
 
-@app.get("/session/{id}/history")
+@app.get("/session/{id}/history", response_model=dict, dependencies=deps)
 async def get_session_history(
     id: str,
     request: Request,
@@ -206,7 +231,7 @@ async def get_session_history(
     return {"session_id": id, "history": history_json}
 
 
-@app.post("/chat")
+@app.post("/chat", response_model=ChatResponse, dependencies=deps)
 async def chat(
     request_obj: ChatRequest,
     request: Request,

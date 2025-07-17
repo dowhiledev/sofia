@@ -57,6 +57,7 @@ serve = [
     "kafka-python>=2.2.15",
     "starlette-csrf>=3.0.0",
     "pyjwt>=2.10.1",
+    "fastapi-limiter>=0.1.6",
 ]
 cohere = [
     "cohere>=5.16.1",
