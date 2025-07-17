@@ -37,9 +37,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize security manager
     security_manager = SecurityManager(config.server.security)
-    print(security_manager)
 
     yield
+
     # Cleanup
     await session_store.close()
     if security_manager:
@@ -79,7 +79,7 @@ async def authenticate_request(request: Request, required: bool = True) -> Dict[
             )
         return {"authenticated": False}
 
-    token = authorization.split(" ")[1]
+    token = authorization.replace("Bearer ", "", 1).strip()
     try:
         from fastapi.security import HTTPAuthorizationCredentials
 
