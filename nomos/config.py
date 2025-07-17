@@ -70,6 +70,11 @@ class ServerSecurity(BaseModel):
     enable_csrf_protection: bool = False  # Flag to enable CSRF protection
     csrf_secret_key: Optional[str] = None  # Secret key for CSRF protection
 
+    # Development/Testing configuration
+    enable_token_endpoint: bool = (
+        False  # Flag to enable JWT token generation endpoint (dev/test only)
+    )
+
 
 class ServerConfig(BaseModel):
     """Configuration for the FastAPI server."""

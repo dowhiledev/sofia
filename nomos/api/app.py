@@ -5,10 +5,9 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 
 from ..models.agent import Event, StepIdentifier, Summary
@@ -17,9 +16,6 @@ from .db import init_db
 from .models import ChatRequest, ChatResponse, Message, SessionResponse
 from .security import (
     SecurityManager,
-    bearer_scheme,
-    create_auth_dependency,
-    create_rate_limit_dependency,
     setup_security_middleware,
 )
 from .sessions import SessionStore, create_session_store
@@ -68,35 +64,35 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
 
 
-# Create auth dependency
-def get_auth_dependency():
-    """Get authentication dependency."""
-    assert security_manager is not None, "Security manager not initialized"
-    return create_auth_dependency(security_manager)
+async def authenticate_request(request: Request, required: bool = True) -> Dict[str, Any]:
+    """Authenticate a request manually."""
+    if not config.server.security.enable_auth or security_manager is None:
+        return {"authenticated": False}
 
+    authorization = request.headers.get("authorization")
+    if not authorization or not authorization.startswith("Bearer "):
+        if required:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return {"authenticated": False}
 
-# Create optional auth dependency (for endpoints that can work with or without auth)
-def get_optional_auth_dependency():
-    """Get optional authentication dependency."""
-    assert security_manager is not None, "Security manager not initialized"
+    token = authorization.split(" ")[1]
+    try:
+        from fastapi.security import HTTPAuthorizationCredentials
 
-    async def optional_auth_dependency(
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-    ) -> Dict[str, Any]:
-        if not config.server.security.enable_auth or not credentials:
-            return {"authenticated": False}
-        try:
-            return await security_manager.authenticate(credentials)
-        except HTTPException:
-            return {"authenticated": False}
-
-    return optional_auth_dependency
-
-
-# Create rate limit dependency
-def get_rate_limit_dependency():
-    """Get rate limiting dependency."""
-    return create_rate_limit_dependency(config.server.security)
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        return await security_manager.authenticate(credentials)
+    except HTTPException:
+        if required:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return {"authenticated": False}
 
 
 # Serve chat UI at root
@@ -118,56 +114,36 @@ async def health_check() -> dict:
     return {"status": "healthy", "timestamp": time.time()}
 
 
-# Configuration endpoint (optional authentication)
-@app.get("/config")
-async def get_config(
-    auth: Dict = Depends(get_optional_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
-) -> dict:
-    """Get server configuration information."""
-    return {
-        "security": {
-            "auth_enabled": config.server.security.enable_auth,
-            "auth_type": config.server.security.auth_type,
-            "csrf_enabled": config.server.security.enable_csrf_protection,
-            "rate_limiting_enabled": config.server.security.enable_rate_limiting,
-        },
-        "server": {
-            "host": config.server.host,
-            "port": config.server.port,
-        },
-    }
+# Generate JWT token endpoint (for testing purposes only - should be disabled in production)
+if (
+    config.server.security.enable_token_endpoint
+    and config.server.security.enable_auth
+    and config.server.security.auth_type == "jwt"
+):
 
+    @app.post("/auth/token")
+    async def generate_token(payload: dict, request: Request) -> dict:
+        """Generate a JWT token for testing purposes ONLY.
 
-# Generate JWT token endpoint (for testing purposes)
-@app.post("/auth/token")
-async def generate_token(payload: dict) -> dict:
-    """Generate a JWT token for testing purposes."""
-    if not config.server.security.enable_auth or config.server.security.auth_type != "jwt":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="JWT authentication not enabled",
-        )
+        WARNING: This endpoint should be disabled in production environments.
+        It's only intended for development and testing.
+        """
+        from .security import generate_jwt_token
 
-    if not config.server.security.jwt_secret_key:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="JWT secret key not configured",
-        )
-
-    from .security import generate_jwt_token
-
-    token = generate_jwt_token(payload, config.server.security.jwt_secret_key)
-    return {"access_token": token, "token_type": "bearer"}
+        assert config.server.security.jwt_secret_key is not None
+        token = generate_jwt_token(payload, config.server.security.jwt_secret_key)
+        return {"access_token": token, "token_type": "bearer"}
 
 
 @app.post("/session", response_model=SessionResponse)
 async def create_session(
+    request: Request,
     initiate: Optional[bool] = False,
-    auth: Dict = Depends(get_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
 ) -> SessionResponse:
     """Create a new session."""
+    # Handle authentication
+    await authenticate_request(request, required=True)
+
     assert session_store is not None, "Session store not initialized"
     session = agent.create_session()
     session_id = session.session_id  # Use the session's internal ID
@@ -190,10 +166,12 @@ async def create_session(
 async def send_message(
     id: str,
     message: Message,
-    auth: Dict = Depends(get_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+    request: Request,
 ) -> SessionResponse:
     """Send a message to an existing session."""
+    # Handle authentication
+    await authenticate_request(request, required=True)
+
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
     if not session:
@@ -207,10 +185,12 @@ async def send_message(
 @app.delete("/session/{id}")
 async def end_session(
     id: str,
-    auth: Dict = Depends(get_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+    request: Request,
 ) -> dict:
     """End and cleanup a session."""
+    # Handle authentication
+    await authenticate_request(request, required=True)
+
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
     if not session:
@@ -224,10 +204,12 @@ async def end_session(
 @app.get("/session/{id}/history")
 async def get_session_history(
     id: str,
-    auth: Dict = Depends(get_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+    request: Request,
 ) -> dict:
     """Get the history of a session."""
+    # Handle authentication
+    await authenticate_request(request, required=True)
+
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
     if not session:
@@ -245,113 +227,20 @@ async def get_session_history(
 
 @app.post("/chat")
 async def chat(
-    request: ChatRequest,
+    request_obj: ChatRequest,
+    request: Request,
     verbose: bool = False,
-    auth: Dict = Depends(get_auth_dependency()),
-    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
 ) -> ChatResponse:
     """Chat endpoint to get the next response from the agent based on the session data."""
-    res = agent.next(**request.model_dump(), verbose=verbose)
+    # Handle authentication
+    await authenticate_request(request, required=True)
+
+    res = agent.next(**request_obj.model_dump(), verbose=verbose)
     return ChatResponse(
         response=res.decision.model_dump(mode="json"),
         tool_output=res.tool_output,
         session_data=res.state,
     )
-
-
-# async def _handle_websocket(
-#     websocket: WebSocket,
-#     session_id: Optional[str],
-#     initiate: bool,
-#     verbose: bool,
-# ) -> None:
-#     """Handle real-time chat via WebSocket."""
-#     assert session_store is not None, "Session store not initialized"
-#     await websocket.accept()
-
-#     created = session_id is None
-#     if created:
-#         sid = str(uuid.uuid4())
-#         session = agent.create_session()
-#         await session_store.set(sid, session)
-#     else:
-#         assert session_id is not None
-#         sid = session_id
-#         session_opt = await session_store.get(sid)
-#         if session_opt is None:
-#             await websocket.send_json({"error": "Session not found"})
-#             await websocket.close()
-#             return
-#         session = session_opt
-
-#     if initiate:
-#         res = session.next(None)
-#         await session_store.set(sid, session)
-#         await websocket.send_json(
-#             {"session_id": sid, "message": res.decision.model_dump(mode="json")}
-#         )
-#     elif created:
-#         await websocket.send_json({"session_id": sid})
-
-#     with suppress(WebSocketDisconnect):
-#         while True:
-#             data = await websocket.receive_json()
-#             if data.get("close"):
-#                 await websocket.close()
-#                 break
-
-#             user_message = data.get("message")
-#             if user_message is None:
-#                 await websocket.send_json({"error": "Invalid message"})
-#                 continue
-
-#             res = session.next(user_message)
-#             await session_store.set(sid, session)
-#             await websocket.send_json(
-#                 {"session_id": sid, "message": res.decision.model_dump(mode="json")}
-#             )
-
-
-# @app.websocket("/ws")
-# async def websocket_create(
-#     websocket: WebSocket,
-#     initiate: Optional[bool] = False,
-#     verbose: Optional[bool] = False,
-# ) -> None:
-#     """Create a new session and handle WebSocket communication."""
-#     await _handle_websocket(websocket, None, bool(initiate), bool(verbose))
-
-
-# @app.websocket("/ws/{session_id}")
-# async def websocket_endpoint(
-#     websocket: WebSocket,
-#     session_id: str,
-#     initiate: Optional[bool] = False,
-#     verbose: Optional[bool] = False,
-# ) -> None:
-#     """Continue an existing session over WebSocket."""
-#     await _handle_websocket(websocket, session_id, bool(initiate), bool(verbose))
-
-
-# @app.get("/config", response_class=JSONResponse)
-# async def get_agent_config() -> JSONResponse:
-#     """Get the agent configuration as JSON with enhanced metadata."""
-#     config_path = pathlib.Path(os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml")))
-#     if not config_path.exists():
-#         raise HTTPException(status_code=404, detail="Agent configuration file not found")
-
-#     try:
-#         # Parse the YAML configuration
-#         config = parse_yaml_config(str(config_path))
-
-#         # Generate enhanced JSON representation
-#         config_json = generate_config_json(config)
-#         config_json["metadata"]["generated_at"] = datetime.datetime.now().isoformat()
-#         config_json["metadata"]["config_file_path"] = str(config_path)
-
-#         return JSONResponse(content=config_json)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error processing configuration: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -241,13 +241,22 @@ server:
 
 </CodeGroup>
 
-<Card
-  title="Security Guide"
-  icon="shield-check"
-  href="/security"
->
-  Complete security configuration and best practices
-</Card>
+<Warning>
+**Important Security Warning: Token Generation Endpoint**
+
+The `/auth/token` endpoint is automatically exposed when JWT authentication is enabled. This endpoint allows generating JWT tokens for testing purposes and **should never be available in production environments**.
+
+**Security measures in place:**
+- It requires the `enable_token_endpoint` configuration option to be set to `true` in development or testing configurations.
+- It should be disabled or removed in production deployments
+
+**For production JWT authentication, implement your own secure token generation service** that:
+- Validates user credentials properly
+- Uses secure session management
+- Implements proper user authentication flows
+- Issues tokens with appropriate expiration times
+- Logs authentication attempts for security monitoring
+</Warning>
 
 ## LLM Configuration
 

@@ -86,3 +86,6 @@ server:
 
     enable_rate_limiting: true
     rate_limit: "50/minute"
+
+    # Enable token endpoint for development/testing only
+    enable_token_endpoint: true

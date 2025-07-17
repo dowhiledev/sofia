@@ -163,10 +163,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         try:
             # Apply rate limiting using slowapi
             @limiter.limit(self.config.rate_limit)
-            async def rate_limited_call():
+            async def rate_limited_call(request: Request):
                 return await call_next(request)
 
-            response = await rate_limited_call()
+            response = await rate_limited_call(request)
             return response
         except RateLimitExceeded:
             raise HTTPException(
