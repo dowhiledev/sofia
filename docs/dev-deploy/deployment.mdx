@@ -88,6 +88,7 @@ Essential environment variables for deployment:
 | `HUGGINGFACE_API_TOKEN` | HuggingFace token | If using HuggingFace |
 | `JWT_SECRET_KEY` | JWT secret key | If using JWT auth |
 | `CSRF_SECRET_KEY` | CSRF secret key | If using CSRF protection |
+| `API_KEY_VALIDATION_URL` | API key validation endpoint URL | If using API key auth |
 | `SESSION_STORE` | Session store type | Optional |
 | `DATABASE_URL` | Database connection URL | If using production session store |
 | `REDIS_URL` | Redis connection URL | If using production session store |
@@ -113,7 +114,21 @@ server:
   security:
     enable_auth: true
     auth_type: api_key
-    api_key_url: "https://your-api.com/validate-key"
+    api_key_url: "https://your-api-validation-service.com/validate"
+```
+
+```yaml Complete Security Setup
+server:
+  security:
+    enable_auth: true
+    auth_type: api_key
+    api_key_url: "$API_KEY_VALIDATION_URL"
+    enable_rate_limiting: true
+    rate_limit: "100/minute"
+    enable_csrf_protection: true
+    csrf_secret_key: "$CSRF_SECRET_KEY"
+    allowed_origins:
+      - "https://your-frontend.com"
 ```
 
 </CodeGroup>

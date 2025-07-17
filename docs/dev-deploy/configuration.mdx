@@ -196,8 +196,22 @@ server:
   security:
     enable_auth: true
     auth_type: api_key
-    api_key_url: "https://your-api.com/validate-key"
+    api_key_url: "https://your-api-validation-service.com/validate"
     enable_rate_limiting: true
+    rate_limit: "50/minute"
+```
+
+```yaml API Key with Environment Variables
+server:
+  security:
+    enable_auth: true
+    auth_type: api_key
+    api_key_url: "$API_KEY_VALIDATION_URL"
+    enable_rate_limiting: true
+    rate_limit: "100/minute"
+    enable_csrf_protection: true
+    csrf_secret_key: "$CSRF_SECRET_KEY"
+```
     rate_limit: "50/minute"
 ```
 
@@ -408,6 +422,7 @@ Common environment variables for NOMOS agents:
 | `ANTHROPIC_API_KEY` | Anthropic API key | If using Anthropic |
 | `JWT_SECRET_KEY` | JWT secret key | If using JWT authentication |
 | `CSRF_SECRET_KEY` | CSRF secret key | If using CSRF protection |
+| `API_KEY_VALIDATION_URL` | API key validation endpoint URL | If using API key authentication |
 | `DATABASE_URL` | Database connection URL | If using production session store |
 | `REDIS_URL` | Redis connection URL | If using Redis for sessions |
 | `KAFKA_BROKERS` | Kafka broker URLs | If using Kafka for events |
@@ -443,7 +458,9 @@ server:
 
 Here's a comprehensive configuration example that includes all security features:
 
-```yaml
+<CodeGroup>
+
+```yaml JWT Authentication
 name: "secure-production-agent"
 persona: "You are a secure AI assistant with comprehensive security features enabled."
 
@@ -470,14 +487,14 @@ llm:
   max_tokens: 1000
   api_key: "$OPENAI_API_KEY"
 
-# Server configuration with full security
+# Server configuration with JWT security
 server:
   port: 8000
   host: "0.0.0.0"
   workers: 4
 
   security:
-    # Authentication
+    # JWT Authentication
     enable_auth: true
     auth_type: "jwt"
     jwt_secret_key: "$JWT_SECRET_KEY"
@@ -526,6 +543,92 @@ logging:
       level: "DEBUG"
       format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | {message}"
 ```
+
+```yaml API Key Authentication
+name: "secure-api-key-agent"
+persona: "You are a secure AI assistant using API key authentication."
+
+# Agent steps
+steps:
+  - step_id: "start"
+    description: "Initial greeting and task identification"
+    available_tools: ["get_time", "calculator"]
+    routes:
+      - target: "end"
+        condition: "Task is complete"
+  - step_id: "end"
+    description: "Final response and goodbye"
+
+start_step_id: "start"
+max_errors: 3
+max_iter: 10
+
+# LLM configuration
+llm:
+  provider: "openai"
+  model: "gpt-4o-mini"
+  temperature: 0.7
+  max_tokens: 1000
+  api_key: "$OPENAI_API_KEY"
+
+# Server configuration with API key security
+server:
+  port: 8000
+  host: "0.0.0.0"
+  workers: 4
+
+  security:
+    # API Key Authentication
+    enable_auth: true
+    auth_type: "api_key"
+    api_key_url: "$API_KEY_VALIDATION_URL"
+
+    # Rate limiting
+    enable_rate_limiting: true
+    rate_limit: "100/minute"
+
+    # CSRF protection
+    enable_csrf_protection: true
+    csrf_secret_key: "$CSRF_SECRET_KEY"
+
+    # CORS configuration
+    allowed_origins:
+      - "https://your-frontend.com"
+      - "https://admin.your-domain.com"
+
+  # Production session store
+  session:
+    store_type: "production"
+    default_ttl: 3600
+    cache_ttl: 1800
+    database_url: "$DATABASE_URL"
+    redis_url: "$REDIS_URL"
+    kafka_brokers: "$KAFKA_BROKERS"
+    events_enabled: true
+
+# Tools configuration
+tools:
+  files:
+    - "custom_tools.py"
+  ext:
+    - tag: "@pkg/math.sqrt"
+      name: "sqrt"
+    - tag: "@langchain/calculator"
+      name: "calculator"
+
+# Logging configuration
+logging:
+  enable: true
+  handlers:
+    - type: "stderr"
+      level: "INFO"
+      format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+    - type: "file"
+      level: "DEBUG"
+      format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {file}:{line} | {message}"
+```
+
+</CodeGroup>
 
 ## Configuration Examples
 

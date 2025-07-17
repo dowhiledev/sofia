@@ -45,7 +45,9 @@ NOMOS provides comprehensive security features to protect your AI agents in prod
 
 Enable basic security features in your configuration:
 
-```yaml
+<CodeGroup>
+
+```yaml JWT Authentication
 server:
   security:
     enable_auth: true
@@ -56,6 +58,20 @@ server:
     enable_csrf_protection: true
     csrf_secret_key: "$CSRF_SECRET_KEY"
 ```
+
+```yaml API Key Authentication
+server:
+  security:
+    enable_auth: true
+    auth_type: api_key
+    api_key_url: "$API_KEY_VALIDATION_URL"
+    enable_rate_limiting: true
+    rate_limit: "100/minute"
+    enable_csrf_protection: true
+    csrf_secret_key: "$CSRF_SECRET_KEY"
+```
+
+</CodeGroup>
 
 ## Security Endpoints
 
@@ -72,6 +88,7 @@ Essential security environment variables:
 |----------|-------------|
 | `JWT_SECRET_KEY` | Secret key for JWT token signing |
 | `CSRF_SECRET_KEY` | Secret key for CSRF protection |
+| `API_KEY_VALIDATION_URL` | Endpoint URL for API key validation |
 
 ## Best Practices
 
