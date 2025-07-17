@@ -28,4 +28,4 @@ config = nomos.AgentConfig.from_yaml(os.getenv("CONFIG_PATH", "config.agent.yaml
 llm = config.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
 agent = nomos.Agent.from_config(config, llm, tool_list)
 
-__all__ = ["agent"]
+__all__ = ["agent", "config"]

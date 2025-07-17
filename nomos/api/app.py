@@ -1,28 +1,19 @@
 """Nomos Agent API."""
 
-import datetime
-import os
 import pathlib
-import uuid
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from typing import AsyncGenerator, List, Optional, Union
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from nomos.api.agent import agent
-from nomos.api.db import init_db
-from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
-from nomos.api.sessions import SessionStore, create_session_store
-from nomos.models.agent import Message as FlowMessage
-from nomos.models.agent import StepIdentifier, Summary
-from nomos.utils.yml2mm import generate_config_json, parse_yaml_config
-
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
-SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")
-SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.0.1")
+from ..models.agent import Event, StepIdentifier, Summary
+from .agent import agent, config
+from .db import init_db
+from .models import ChatRequest, ChatResponse, Message, SessionResponse
+from .sessions import SessionStore, create_session_store
 
 session_store: Optional[SessionStore] = None
 
@@ -35,23 +26,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global session_store
     # Initialize database
     await init_db()
-    session_config = getattr(agent.config, "session", None)
-    session_store = await create_session_store(session_config)
+    session_store = await create_session_store(config.session)
     assert session_store is not None, "Session store initialization failed"
     yield
     # Cleanup
     await session_store.close()
 
 
-app = FastAPI(title=f"{SERVICE_NAME}-api", version=SERVICE_VERSION, lifespan=lifespan)
+app = FastAPI(title=f"{config.name}-api", lifespan=lifespan)
 
 # CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=config.server.security.allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Mount static files directory
@@ -91,122 +81,48 @@ async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
     )
 
 
-@app.post("/session/{session_id}/message", response_model=SessionResponse)
-async def send_message(session_id: str, message: Message) -> SessionResponse:
+@app.post("/session/{id}/message", response_model=SessionResponse)
+async def send_message(id: str, message: Message) -> SessionResponse:
     """Send a message to an existing session."""
     assert session_store is not None, "Session store not initialized"
-    session = await session_store.get(session_id)
+    session = await session_store.get(id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     res = session.next(message.content)
-    await session_store.set(session_id, session)
-    return SessionResponse(session_id=session_id, message=res.decision.model_dump(mode="json"))
+    await session_store.set(id, session)
+    return SessionResponse(session_id=id, message=res.decision.model_dump(mode="json"))
 
 
-@app.delete("/session/{session_id}")
-async def end_session(session_id: str) -> dict:
+@app.delete("/session/{id}")
+async def end_session(id: str) -> dict:
     """End and cleanup a session."""
     assert session_store is not None, "Session store not initialized"
-    session = await session_store.get(session_id)
+    session = await session_store.get(id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Clean up session
-    await session_store.delete(session_id)
+    await session_store.delete(id)
     return {"message": "Session ended successfully"}
 
 
-@app.get("/session/{session_id}/history")
-async def get_session_history(session_id: str) -> dict:
+@app.get("/session/{id}/history")
+async def get_session_history(id: str) -> dict:
     """Get the history of a session."""
     assert session_store is not None, "Session store not initialized"
-    session = await session_store.get(session_id)
+    session = await session_store.get(id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: List[Union[FlowMessage, StepIdentifier, Summary]] = session.memory.get_history()
+    history: List[Union[Event, StepIdentifier, Summary]] = session.memory.get_history()
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
-        if isinstance(msg, FlowMessage) and msg.role not in ["error", "fallback"]
+        if isinstance(msg, Event) and msg.type not in ["error", "fallback"]
     ]
-    return {"session_id": session_id, "history": history_json}
-
-
-async def _handle_websocket(
-    websocket: WebSocket,
-    session_id: Optional[str],
-    initiate: bool,
-    verbose: bool,
-) -> None:
-    """Handle real-time chat via WebSocket."""
-    assert session_store is not None, "Session store not initialized"
-    await websocket.accept()
-
-    created = session_id is None
-    if created:
-        sid = str(uuid.uuid4())
-        session = agent.create_session()
-        await session_store.set(sid, session)
-    else:
-        assert session_id is not None
-        sid = session_id
-        session_opt = await session_store.get(sid)
-        if session_opt is None:
-            await websocket.send_json({"error": "Session not found"})
-            await websocket.close()
-            return
-        session = session_opt
-
-    if initiate:
-        res = session.next(None)
-        await session_store.set(sid, session)
-        await websocket.send_json(
-            {"session_id": sid, "message": res.decision.model_dump(mode="json")}
-        )
-    elif created:
-        await websocket.send_json({"session_id": sid})
-
-    with suppress(WebSocketDisconnect):
-        while True:
-            data = await websocket.receive_json()
-            if data.get("close"):
-                await websocket.close()
-                break
-
-            user_message = data.get("message")
-            if user_message is None:
-                await websocket.send_json({"error": "Invalid message"})
-                continue
-
-            res = session.next(user_message)
-            await session_store.set(sid, session)
-            await websocket.send_json(
-                {"session_id": sid, "message": res.decision.model_dump(mode="json")}
-            )
-
-
-@app.websocket("/ws")
-async def websocket_create(
-    websocket: WebSocket,
-    initiate: Optional[bool] = False,
-    verbose: Optional[bool] = False,
-) -> None:
-    """Create a new session and handle WebSocket communication."""
-    await _handle_websocket(websocket, None, bool(initiate), bool(verbose))
-
-
-@app.websocket("/ws/{session_id}")
-async def websocket_endpoint(
-    websocket: WebSocket,
-    session_id: str,
-    initiate: Optional[bool] = False,
-    verbose: Optional[bool] = False,
-) -> None:
-    """Continue an existing session over WebSocket."""
-    await _handle_websocket(websocket, session_id, bool(initiate), bool(verbose))
+    return {"session_id": id, "history": history_json}
 
 
 @app.post("/chat")
@@ -220,25 +136,99 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
     )
 
 
-@app.get("/config", response_class=JSONResponse)
-async def get_agent_config() -> JSONResponse:
-    """Get the agent configuration as JSON with enhanced metadata."""
-    config_path = pathlib.Path(os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml")))
-    if not config_path.exists():
-        raise HTTPException(status_code=404, detail="Agent configuration file not found")
+# async def _handle_websocket(
+#     websocket: WebSocket,
+#     session_id: Optional[str],
+#     initiate: bool,
+#     verbose: bool,
+# ) -> None:
+#     """Handle real-time chat via WebSocket."""
+#     assert session_store is not None, "Session store not initialized"
+#     await websocket.accept()
 
-    try:
-        # Parse the YAML configuration
-        config = parse_yaml_config(str(config_path))
+#     created = session_id is None
+#     if created:
+#         sid = str(uuid.uuid4())
+#         session = agent.create_session()
+#         await session_store.set(sid, session)
+#     else:
+#         assert session_id is not None
+#         sid = session_id
+#         session_opt = await session_store.get(sid)
+#         if session_opt is None:
+#             await websocket.send_json({"error": "Session not found"})
+#             await websocket.close()
+#             return
+#         session = session_opt
 
-        # Generate enhanced JSON representation
-        config_json = generate_config_json(config)
-        config_json["metadata"]["generated_at"] = datetime.datetime.now().isoformat()
-        config_json["metadata"]["config_file_path"] = str(config_path)
+#     if initiate:
+#         res = session.next(None)
+#         await session_store.set(sid, session)
+#         await websocket.send_json(
+#             {"session_id": sid, "message": res.decision.model_dump(mode="json")}
+#         )
+#     elif created:
+#         await websocket.send_json({"session_id": sid})
 
-        return JSONResponse(content=config_json)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing configuration: {str(e)}")
+#     with suppress(WebSocketDisconnect):
+#         while True:
+#             data = await websocket.receive_json()
+#             if data.get("close"):
+#                 await websocket.close()
+#                 break
+
+#             user_message = data.get("message")
+#             if user_message is None:
+#                 await websocket.send_json({"error": "Invalid message"})
+#                 continue
+
+#             res = session.next(user_message)
+#             await session_store.set(sid, session)
+#             await websocket.send_json(
+#                 {"session_id": sid, "message": res.decision.model_dump(mode="json")}
+#             )
+
+
+# @app.websocket("/ws")
+# async def websocket_create(
+#     websocket: WebSocket,
+#     initiate: Optional[bool] = False,
+#     verbose: Optional[bool] = False,
+# ) -> None:
+#     """Create a new session and handle WebSocket communication."""
+#     await _handle_websocket(websocket, None, bool(initiate), bool(verbose))
+
+
+# @app.websocket("/ws/{session_id}")
+# async def websocket_endpoint(
+#     websocket: WebSocket,
+#     session_id: str,
+#     initiate: Optional[bool] = False,
+#     verbose: Optional[bool] = False,
+# ) -> None:
+#     """Continue an existing session over WebSocket."""
+#     await _handle_websocket(websocket, session_id, bool(initiate), bool(verbose))
+
+
+# @app.get("/config", response_class=JSONResponse)
+# async def get_agent_config() -> JSONResponse:
+#     """Get the agent configuration as JSON with enhanced metadata."""
+#     config_path = pathlib.Path(os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml")))
+#     if not config_path.exists():
+#         raise HTTPException(status_code=404, detail="Agent configuration file not found")
+
+#     try:
+#         # Parse the YAML configuration
+#         config = parse_yaml_config(str(config_path))
+
+#         # Generate enhanced JSON representation
+#         config_json = generate_config_json(config)
+#         config_json["metadata"]["generated_at"] = datetime.datetime.now().isoformat()
+#         config_json["metadata"]["config_file_path"] = str(config_path)
+
+#         return JSONResponse(content=config_json)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error processing configuration: {str(e)}")
 
 
 if __name__ == "__main__":
@@ -247,5 +237,10 @@ if __name__ == "__main__":
     import uvicorn
 
     reload = "--reload" in sys.argv
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("nomos.api.app:app", host="0.0.0.0", port=port, reload=reload)
+    uvicorn.run(
+        "nomos.api.app:app",
+        host=config.server.host,
+        port=config.server.port,
+        workers=config.server.workers,
+        reload=reload,
+    )

@@ -6,7 +6,7 @@ import importlib
 import importlib.util
 import os
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
@@ -50,14 +50,30 @@ class SessionConfig(BaseModel):
         )
 
 
+class ServerSecurity(BaseModel):
+    """Security configuration for the FastAPI server."""
+
+    # CORS configuration
+    allowed_origins: List[str] = Field(
+        default_factory=["*"],
+        description="List of allowed origins for CORS",
+    )
+
+    # Authentication configuration
+    enable_auth: bool = False  # Flag to enable authentication
+    auth_type: Optional[Literal["jwt", "oauth2"]] = None  # Type of authentication to use
+    jwt_secret_key: Optional[str] = None  # Secret key for JWT authentication
+    oauth2_client_id: Optional[str] = None  # Client ID for OAuth2 authentication
+    oauth2_client_secret: Optional[str] = None  # Client secret for OAuth2 authentication
+
+
 class ServerConfig(BaseModel):
     """Configuration for the FastAPI server."""
 
-    redis_url: Optional[str] = None
-    database_url: Optional[str] = None
-    enable_tracing: bool = False
     port: int = 8000
+    host: str = "0.0.0.0"
     workers: int = 1
+    security: ServerSecurity = ServerSecurity()
 
 
 class ExternalTool(BaseModel):
@@ -232,7 +248,7 @@ class AgentConfig(BaseSettings):
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
     # Optional session store configuration
-    session: Optional[SessionConfig] = None
+    session: SessionConfig = SessionConfig()
 
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
