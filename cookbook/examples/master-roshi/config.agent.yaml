@@ -83,9 +83,9 @@ server:
     enable_auth: true
     auth_type: jwt
     jwt_secret_key: "$JWT_SECRET_KEY"
-    
+
     enable_rate_limiting: true
     rate_limit: "50/minute"
-    
+
     enable_csrf_protection: true
     csrf_secret_key: "$CSRF_SECRET_KEY"
