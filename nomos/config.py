@@ -61,10 +61,16 @@ class ServerSecurity(BaseModel):
 
     # Authentication configuration
     enable_auth: bool = False  # Flag to enable authentication
-    auth_type: Optional[Literal["jwt", "oauth2"]] = None  # Type of authentication to use
+    auth_type: Optional[Literal["jwt", "api_key"]] = None  # Type of authentication to use
     jwt_secret_key: Optional[str] = None  # Secret key for JWT authentication
-    oauth2_client_id: Optional[str] = None  # Client ID for OAuth2 authentication
-    oauth2_client_secret: Optional[str] = None  # Client secret for OAuth2 authentication
+    api_key_url: Optional[str] = None  # URL for API key validation
+
+    # Rate limiting configuration
+    enable_rate_limiting: bool = False  # Flag to enable rate limiting
+    rate_limit: Optional[str] = None  # Rate limit configuration (e.g., "100/minute")
+
+    # CSRF protection configuration
+    enable_csrf_protection: bool = False  # Flag to enable CSRF protection
 
 
 class ServerConfig(BaseModel):
@@ -74,6 +80,7 @@ class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     workers: int = 1
     security: ServerSecurity = ServerSecurity()
+    session: SessionConfig = SessionConfig()
 
 
 class ExternalTool(BaseModel):
@@ -246,9 +253,6 @@ class AgentConfig(BaseSettings):
 
     server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
-
-    # Optional session store configuration
-    session: SessionConfig = SessionConfig()
 
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 

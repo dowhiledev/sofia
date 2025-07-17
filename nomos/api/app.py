@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global session_store
     # Initialize database
     await init_db()
-    session_store = await create_session_store(config.session)
+    session_store = await create_session_store(config.server.session)
     assert session_store is not None, "Session store initialization failed"
     yield
     # Cleanup
