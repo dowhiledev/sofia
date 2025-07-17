@@ -1,21 +1,31 @@
 """Nomos Agent API."""
 
 import pathlib
+import time
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 
 from ..models.agent import Event, StepIdentifier, Summary
 from .agent import agent, config
 from .db import init_db
 from .models import ChatRequest, ChatResponse, Message, SessionResponse
+from .security import (
+    SecurityManager,
+    bearer_scheme,
+    create_auth_dependency,
+    create_rate_limit_dependency,
+    setup_security_middleware,
+)
 from .sessions import SessionStore, create_session_store
 
 session_store: Optional[SessionStore] = None
+security_manager: Optional[SecurityManager] = None
 
 BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
@@ -23,17 +33,26 @@ BASE_DIR = pathlib.Path(__file__).parent.absolute()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan context manager for FastAPI app."""
-    global session_store
+    global session_store, security_manager
     # Initialize database
     await init_db()
     session_store = await create_session_store(config.server.session)
     assert session_store is not None, "Session store initialization failed"
+
+    # Initialize security manager
+    security_manager = SecurityManager(config.server.security)
+
     yield
     # Cleanup
     await session_store.close()
+    if security_manager:
+        await security_manager.close()
 
 
 app = FastAPI(title=f"{config.name}-api", lifespan=lifespan)
+
+# Setup security middleware
+setup_security_middleware(app, config.server.security)
 
 # CORS middleware configuration
 app.add_middleware(
@@ -41,11 +60,42 @@ app.add_middleware(
     allow_origins=config.server.security.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
 )
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
+
+
+# Create auth dependency
+def get_auth_dependency():
+    """Get authentication dependency."""
+    assert security_manager is not None, "Security manager not initialized"
+    return create_auth_dependency(security_manager)
+
+
+# Create optional auth dependency (for endpoints that can work with or without auth)
+def get_optional_auth_dependency():
+    """Get optional authentication dependency."""
+    assert security_manager is not None, "Security manager not initialized"
+
+    async def optional_auth_dependency(
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    ) -> Dict[str, Any]:
+        if not config.server.security.enable_auth or not credentials:
+            return {"authenticated": False}
+        try:
+            return await security_manager.authenticate(credentials)
+        except HTTPException:
+            return {"authenticated": False}
+
+    return optional_auth_dependency
+
+
+# Create rate limit dependency
+def get_rate_limit_dependency():
+    """Get rate limiting dependency."""
+    return create_rate_limit_dependency(config.server.security)
 
 
 # Serve chat UI at root
@@ -60,8 +110,62 @@ async def get_chat_ui() -> HTMLResponse:
         return HTMLResponse(content=f.read())
 
 
+# Health check endpoint (no authentication required)
+@app.get("/health")
+async def health_check() -> dict:
+    """Health check endpoint."""
+    return {"status": "healthy", "timestamp": time.time()}
+
+
+# Configuration endpoint (optional authentication)
+@app.get("/config")
+async def get_config(
+    auth: Dict = Depends(get_optional_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> dict:
+    """Get server configuration information."""
+    return {
+        "security": {
+            "auth_enabled": config.server.security.enable_auth,
+            "auth_type": config.server.security.auth_type,
+            "csrf_enabled": config.server.security.enable_csrf_protection,
+            "rate_limiting_enabled": config.server.security.enable_rate_limiting,
+        },
+        "server": {
+            "host": config.server.host,
+            "port": config.server.port,
+        },
+    }
+
+
+# Generate JWT token endpoint (for testing purposes)
+@app.post("/auth/token")
+async def generate_token(payload: dict) -> dict:
+    """Generate a JWT token for testing purposes."""
+    if not config.server.security.enable_auth or config.server.security.auth_type != "jwt":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="JWT authentication not enabled",
+        )
+
+    if not config.server.security.jwt_secret_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="JWT secret key not configured",
+        )
+
+    from .security import generate_jwt_token
+
+    token = generate_jwt_token(payload, config.server.security.jwt_secret_key)
+    return {"access_token": token, "token_type": "bearer"}
+
+
 @app.post("/session", response_model=SessionResponse)
-async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
+async def create_session(
+    initiate: Optional[bool] = False,
+    auth: Dict = Depends(get_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> SessionResponse:
     """Create a new session."""
     assert session_store is not None, "Session store not initialized"
     session = agent.create_session()
@@ -82,7 +186,12 @@ async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
 
 
 @app.post("/session/{id}/message", response_model=SessionResponse)
-async def send_message(id: str, message: Message) -> SessionResponse:
+async def send_message(
+    id: str,
+    message: Message,
+    auth: Dict = Depends(get_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> SessionResponse:
     """Send a message to an existing session."""
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -95,7 +204,11 @@ async def send_message(id: str, message: Message) -> SessionResponse:
 
 
 @app.delete("/session/{id}")
-async def end_session(id: str) -> dict:
+async def end_session(
+    id: str,
+    auth: Dict = Depends(get_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> dict:
     """End and cleanup a session."""
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -108,7 +221,11 @@ async def end_session(id: str) -> dict:
 
 
 @app.get("/session/{id}/history")
-async def get_session_history(id: str) -> dict:
+async def get_session_history(
+    id: str,
+    auth: Dict = Depends(get_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> dict:
     """Get the history of a session."""
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -126,7 +243,12 @@ async def get_session_history(id: str) -> dict:
 
 
 @app.post("/chat")
-async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
+async def chat(
+    request: ChatRequest,
+    verbose: bool = False,
+    auth: Dict = Depends(get_auth_dependency()),
+    rate_limit: Optional[None] = Depends(get_rate_limit_dependency()),
+) -> ChatResponse:
     """Chat endpoint to get the next response from the agent based on the session data."""
     res = agent.next(**request.model_dump(), verbose=verbose)
     return ChatResponse(

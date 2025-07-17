@@ -54,10 +54,7 @@ class ServerSecurity(BaseModel):
     """Security configuration for the FastAPI server."""
 
     # CORS configuration
-    allowed_origins: List[str] = Field(
-        default_factory=["*"],
-        description="List of allowed origins for CORS",
-    )
+    allowed_origins: List[str] = Field(["*"], description="List of allowed origins for CORS")
 
     # Authentication configuration
     enable_auth: bool = False  # Flag to enable authentication
@@ -71,6 +68,7 @@ class ServerSecurity(BaseModel):
 
     # CSRF protection configuration
     enable_csrf_protection: bool = False  # Flag to enable CSRF protection
+    csrf_secret_key: Optional[str] = None  # Secret key for CSRF protection
 
 
 class ServerConfig(BaseModel):

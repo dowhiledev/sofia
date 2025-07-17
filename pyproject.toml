@@ -55,6 +55,9 @@ serve = [
     "asyncpg (>=0.30.0,<0.31.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "kafka-python>=2.2.15",
+    "slowapi>=0.1.9",
+    "starlette-csrf>=3.0.0",
+    "pyjwt>=2.10.1",
 ]
 cohere = [
     "cohere>=5.16.1",
