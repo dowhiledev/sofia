@@ -80,12 +80,11 @@ llm:
 
 server:
   security:
-    enable_auth: true
+    enable_auth: false
     auth_type: jwt
     jwt_secret_key: "$JWT_SECRET_KEY"
 
     enable_rate_limiting: true
     rate_limit: "50/minute"
 
-    # Enable token endpoint for development/testing only
     enable_token_endpoint: true
