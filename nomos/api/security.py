@@ -186,18 +186,6 @@ def create_auth_dependency(security_manager: SecurityManager):
     return auth_dependency
 
 
-def create_rate_limit_dependency(security_config: ServerSecurity):
-    """Create rate limiting dependency function."""
-
-    async def rate_limit_dependency(request: Request):
-        if not security_config.enable_rate_limiting:
-            return None
-        # This is handled by middleware, just return None
-        return None
-
-    return rate_limit_dependency
-
-
 def generate_jwt_token(
     payload: Dict[str, Any], secret_key: str, expires_delta: Optional[timedelta] = None
 ) -> str:
