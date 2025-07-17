@@ -17,6 +17,8 @@ dependencies = [
     "numpy>=2.2.6",
 ]
 
+[tool.uv]
+required-version = "0.7.13"
 
 [build-system]
 requires = ["hatchling >=1.9.0,<2.0.0"]
@@ -55,6 +57,9 @@ serve = [
     "asyncpg (>=0.30.0,<0.31.0)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "kafka-python>=2.2.15",
+    "starlette-csrf>=3.0.0",
+    "pyjwt>=2.10.1",
+    "fastapi-limiter>=0.1.6",
 ]
 cohere = [
     "cohere>=5.16.1",

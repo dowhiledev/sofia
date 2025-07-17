@@ -76,7 +76,8 @@
             "pages": [
               "dev-deploy/configuration",
               "dev-deploy/cli-usage",
-              "dev-deploy/deployment"
+              "dev-deploy/deployment",
+              "dev-deploy/security"
             ]
           },
           {

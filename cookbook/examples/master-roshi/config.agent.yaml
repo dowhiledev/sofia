@@ -76,3 +76,20 @@ tools:
 llm:
   provider: mistral
   model: devstral-small-2507
+
+
+server:
+  security:
+    enable_auth: true
+    auth_type: jwt
+    jwt_secret_key: "$JWT_SECRET_KEY"
+
+    # enable_rate_limiting: false
+    # redis_url: redis://localhost:6379
+    # rate_limit_times: 100
+    # rate_limit_seconds: 60
+
+    # enable_csrf_protection: true
+    # csrf_secret_key: "$CSRF_SECRET_KEY"
+
+    enable_token_endpoint: true

@@ -6,7 +6,7 @@ import importlib
 import importlib.util
 import os
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
@@ -50,14 +50,42 @@ class SessionConfig(BaseModel):
         )
 
 
+class ServerSecurity(BaseModel):
+    """Security configuration for the FastAPI server."""
+
+    # CORS configuration
+    allowed_origins: List[str] = Field(["*"], description="List of allowed origins for CORS")
+
+    # Authentication configuration
+    enable_auth: bool = False  # Flag to enable authentication
+    auth_type: Optional[Literal["jwt", "api_key"]] = None  # Type of authentication to use
+    jwt_secret_key: Optional[str] = None  # Secret key for JWT authentication
+    api_key_url: Optional[str] = None  # URL for API key validation
+
+    # Rate limiting configuration
+    enable_rate_limiting: bool = False  # Flag to enable rate limiting
+    redis_url: Optional[str] = None  # Redis URL for rate limiting
+    rate_limit_times: Optional[int] = None  # Number of allowed requests per time period
+    rate_limit_seconds: Optional[int] = None  # Time period for rate limiting in seconds
+
+    # CSRF protection configuration
+    enable_csrf_protection: bool = False  # Flag to enable CSRF protection
+    csrf_secret_key: Optional[str] = None  # Secret key for CSRF protection
+
+    # Development/Testing configuration
+    enable_token_endpoint: bool = (
+        False  # Flag to enable JWT token generation endpoint (dev/test only)
+    )
+
+
 class ServerConfig(BaseModel):
     """Configuration for the FastAPI server."""
 
-    redis_url: Optional[str] = None
-    database_url: Optional[str] = None
-    enable_tracing: bool = False
     port: int = 8000
+    host: str = "0.0.0.0"
     workers: int = 1
+    security: ServerSecurity = ServerSecurity()
+    session: SessionConfig = SessionConfig()
 
 
 class ExternalTool(BaseModel):
@@ -231,9 +259,6 @@ class AgentConfig(BaseSettings):
     server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
-    # Optional session store configuration
-    session: Optional[SessionConfig] = None
-
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
     @classmethod
@@ -246,23 +271,24 @@ class AgentConfig(BaseSettings):
         """
         import yaml
 
+        def expand_env_vars(obj):
+            """Recursively expand environment variables in nested dictionaries and lists."""
+            if isinstance(obj, dict):
+                return {k: expand_env_vars(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [expand_env_vars(item) for item in obj]
+            elif isinstance(obj, str) and obj.startswith("$"):
+                # Extract environment variable name and get its value
+                env_var = obj[1:]  # Remove the $ prefix
+                return os.getenv(env_var, obj)  # Return original value if env var not found
+            else:
+                return obj
+
         with open(file_path, "r") as file:
             data = yaml.safe_load(file)
-        server_data = data.get("server", {})
-        if isinstance(server_data, dict):
-            expanded = {
-                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
-                for k, v in server_data.items()
-            }
-            data["server"] = expanded
 
-        session_data = data.get("session") or data.get("session_store")
-        if isinstance(session_data, dict):
-            expanded = {
-                k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v)
-                for k, v in session_data.items()
-            }
-            data["session"] = expanded
+        # Expand environment variables in the entire configuration
+        data = expand_env_vars(data)
 
         return cls(**data)
 
