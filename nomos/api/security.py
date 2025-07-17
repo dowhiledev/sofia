@@ -5,18 +5,12 @@ from typing import Any, Dict, Optional
 
 import httpx
 import jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette_csrf import CSRFMiddleware as StarletteCSRFMiddleware
+from starlette_csrf import CSRFMiddleware
 
 from ..config import ServerSecurity
-
-# Global limiter instance
-limiter = Limiter(key_func=get_remote_address)
 
 # Security schemes
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -127,54 +121,6 @@ class SecurityManager:
             )
 
 
-class CSRFMiddleware(BaseHTTPMiddleware):
-    """Custom CSRF middleware wrapper."""
-
-    def __init__(self, app, csrf_middleware):
-        super().__init__(app)
-        self.csrf_middleware = csrf_middleware
-
-    async def dispatch(self, request: Request, call_next):
-        # Skip CSRF for GET requests and health checks
-        if request.method in ["GET", "HEAD", "OPTIONS"] or request.url.path in [
-            "/health",
-            "/docs",
-            "/openapi.json",
-        ]:
-            response = await call_next(request)
-            return response
-
-        # Use the starlette-csrf middleware
-        return await self.csrf_middleware(request, call_next)
-
-
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Rate limiting middleware."""
-
-    def __init__(self, app, security_config: ServerSecurity):
-        super().__init__(app)
-        self.config = security_config
-
-    async def dispatch(self, request: Request, call_next):
-        if not self.config.enable_rate_limiting or not self.config.rate_limit:
-            response = await call_next(request)
-            return response
-
-        try:
-            # Apply rate limiting using slowapi
-            @limiter.limit(self.config.rate_limit)
-            async def rate_limited_call(request: Request):
-                return await call_next(request)
-
-            response = await rate_limited_call(request)
-            return response
-        except RateLimitExceeded:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Rate limit exceeded",
-            )
-
-
 def create_auth_dependency(security_manager: SecurityManager):
     """Create authentication dependency function."""
 
@@ -199,27 +145,31 @@ def generate_jwt_token(
     return jwt.encode(payload, secret_key, algorithm="HS256")
 
 
-def setup_security_middleware(app, security_config: ServerSecurity):
+def setup_security_middleware(app: FastAPI, security_config: ServerSecurity):
     """Setup all security middleware on the FastAPI app."""
+
+    # CORS middleware configuration
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=security_config.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
+    )
 
     # Setup rate limiting
     if security_config.enable_rate_limiting:
-        app.state.limiter = limiter
-        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-        app.add_middleware(RateLimitMiddleware, security_config=security_config)
+        # TODO: Implement custom rate limiting logic if needed
+        pass
 
     # Setup CSRF protection
-    if security_config.enable_csrf_protection:
-        # Use provided secret key or generate a random one
-        import secrets
-
-        csrf_secret = security_config.csrf_secret_key or secrets.token_hex(32)
-
+    if security_config.enable_csrf_protection and security_config.csrf_secret_key:
+        csrf_secret = security_config.csrf_secret_key
         app.add_middleware(
-            StarletteCSRFMiddleware,
+            CSRFMiddleware,
             secret_key=csrf_secret,
             cookie_name="csrf_token",
             header_name="X-CSRF-Token",
-            cookie_secure=False,  # Set to True in production with HTTPS
+            cookie_secure=True,
             cookie_samesite="lax",
         )

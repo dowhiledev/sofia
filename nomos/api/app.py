@@ -6,8 +6,8 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 
 from ..models.agent import Event, StepIdentifier, Summary
@@ -47,52 +47,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title=f"{config.name}-api", lifespan=lifespan)
-
-# Setup security middleware
 setup_security_middleware(app, config.server.security)
-
-# CORS middleware configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.server.security.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-CSRF-Token"],
-)
-
-# Mount static files directory
 app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
 
 
-async def authenticate_request(request: Request, required: bool = True) -> Dict[str, Any]:
+async def authenticate_request(request: Request) -> Dict[str, Any]:
     """Authenticate a request manually."""
     if not config.server.security.enable_auth or security_manager is None:
         return {"authenticated": False}
 
     authorization = request.headers.get("authorization")
     if not authorization or not authorization.startswith("Bearer "):
-        if required:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return {"authenticated": False}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     token = authorization.replace("Bearer ", "", 1).strip()
     try:
-        from fastapi.security import HTTPAuthorizationCredentials
-
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         return await security_manager.authenticate(credentials)
     except HTTPException:
-        if required:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return {"authenticated": False}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 # Serve chat UI at root
@@ -142,7 +123,7 @@ async def create_session(
 ) -> SessionResponse:
     """Create a new session."""
     # Handle authentication
-    await authenticate_request(request, required=True)
+    await authenticate_request(request)
 
     assert session_store is not None, "Session store not initialized"
     session = agent.create_session()
@@ -170,7 +151,7 @@ async def send_message(
 ) -> SessionResponse:
     """Send a message to an existing session."""
     # Handle authentication
-    await authenticate_request(request, required=True)
+    await authenticate_request(request)
 
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -189,7 +170,7 @@ async def end_session(
 ) -> dict:
     """End and cleanup a session."""
     # Handle authentication
-    await authenticate_request(request, required=True)
+    await authenticate_request(request)
 
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -208,7 +189,7 @@ async def get_session_history(
 ) -> dict:
     """Get the history of a session."""
     # Handle authentication
-    await authenticate_request(request, required=True)
+    await authenticate_request(request)
 
     assert session_store is not None, "Session store not initialized"
     session = await session_store.get(id)
@@ -233,7 +214,7 @@ async def chat(
 ) -> ChatResponse:
     """Chat endpoint to get the next response from the agent based on the session data."""
     # Handle authentication
-    await authenticate_request(request, required=True)
+    await authenticate_request(request)
 
     res = agent.next(**request_obj.model_dump(), verbose=verbose)
     return ChatResponse(
