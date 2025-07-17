@@ -17,6 +17,8 @@ dependencies = [
     "numpy>=2.2.6",
 ]
 
+[tool.uv]
+required-version = "0.7.13"
 
 [build-system]
 requires = ["hatchling >=1.9.0,<2.0.0"]
