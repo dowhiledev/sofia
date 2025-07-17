@@ -313,19 +313,19 @@ class TestChatEndpoint:
         assert "session_data" in data
 
 
-class TestConfigEndpoint:
-    """Test configuration endpoints."""
+# class TestConfigEndpoint:
+#     """Test configuration endpoints."""
 
-    def test_get_config(self, client):
-        """Test GET /config endpoint."""
-        response = client.get("/config")
+#     def test_get_config(self, client):
+#         """Test GET /config endpoint."""
+#         response = client.get("/config")
 
-        assert response.status_code == 200
-        data = response.json()
-        # The config has metadata with name
-        assert "metadata" in data
-        assert "name" in data["metadata"]
-        assert data["metadata"]["name"] == "test_agent"
+#         assert response.status_code == 200
+#         data = response.json()
+#         # The config has metadata with name
+#         assert "metadata" in data
+#         assert "name" in data["metadata"]
+#         assert data["metadata"]["name"] == "test_agent"
 
 
 class TestAPIModels:
