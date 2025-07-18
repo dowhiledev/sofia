@@ -7,7 +7,7 @@ running on remote servers, supporting both stateful sessions and stateless chat 
 
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Literal, Optional
 from urllib.parse import urljoin
 
 import httpx
@@ -26,11 +26,13 @@ def json_serializer(obj: Any) -> Any:
 
 class NomosClientError(Exception):
     """Base exception for Nomos client errors."""
+
     pass
 
 
 class AuthenticationError(NomosClientError):
     """Authentication related errors."""
+
     pass
 
 
@@ -45,27 +47,29 @@ class APIError(NomosClientError):
 class AuthConfig(BaseModel):
     """Authentication configuration."""
 
-    auth_type: str = Field(default="none", description="Authentication type: 'jwt', 'api_key', or 'none'")
+    auth_type: Literal["none", "jwt", "api_key"] = Field(
+        default="none", description="Authentication type: 'jwt', 'api_key', or 'none'"
+    )
     token: Optional[str] = Field(default=None, description="JWT token or API key")
 
 
 class ChatAPI:
     """Chat API namespace for stateless chat operations."""
-    
+
     def __init__(self, client: "NomosClient"):
         self._client = client
-    
+
     async def next(self, query: str, session_data: Optional[State] = None) -> ChatResponse:
         """
         Send a chat message with optional session data.
-        
+
         Args:
             query: The user's message/query
             session_data: Optional session state for stateless chat
-            
+
         Returns:
             ChatResponse with agent response and updated session data
-            
+
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
@@ -81,20 +85,20 @@ class ChatAPI:
 
 class SessionAPI:
     """Session API namespace for stateful session operations."""
-    
+
     def __init__(self, client: "NomosClient"):
         self._client = client
-    
+
     async def init(self, initiate: bool = False) -> SessionResponse:
         """
         Create a new session.
-        
+
         Args:
             initiate: Whether to initiate the session with a greeting
-            
+
         Returns:
             SessionResponse with session ID and optional initial message
-            
+
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
@@ -102,18 +106,18 @@ class SessionAPI:
         params = {"initiate": "true"} if initiate else {}
         data = await self._client._request("POST", "/session", params=params)
         return SessionResponse(**data)
-    
+
     async def next(self, session_id: str, query: str) -> SessionResponse:
         """
         Send a message to an existing session.
-        
+
         Args:
             session_id: The session ID
             query: The user's message/query
-            
+
         Returns:
             SessionResponse with the agent's response
-            
+
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
@@ -125,34 +129,34 @@ class SessionAPI:
             json_data=request.model_dump(),
         )
         return SessionResponse(**data)
-    
+
     async def get_history(self, session_id: str) -> Dict[str, Any]:
         """
         Get the conversation history for a session.
-        
+
         Args:
             session_id: The session ID
-            
+
         Returns:
             Dictionary containing session_id and history
-            
+
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
         """
         data = await self._client._request("GET", f"/session/{session_id}/history")
         return data
-    
+
     async def end(self, session_id: str) -> Dict[str, Any]:
         """
         End a session.
-        
+
         Args:
             session_id: The session ID to end
-            
+
         Returns:
             Response dictionary with confirmation message
-            
+
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
@@ -213,7 +217,7 @@ class NomosClient:
 
         # Initialize HTTP client
         self._client = httpx.AsyncClient(timeout=timeout)
-        
+
         # Initialize API namespaces
         self.chat = ChatAPI(self)
         self.session = SessionAPI(self)
@@ -233,12 +237,12 @@ class NomosClient:
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for requests including authentication."""
         headers = {"Content-Type": "application/json", **self.custom_headers}
-        
+
         if self.auth.auth_type == "jwt" and self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         elif self.auth.auth_type == "api_key" and self.auth.token:
             headers["X-API-Key"] = self.auth.token
-        
+
         return headers
 
     def _build_url(self, endpoint: str) -> str:
@@ -326,10 +330,10 @@ class NomosClient:
 
 class ChatAPISync:
     """Synchronous Chat API namespace for stateless chat operations."""
-    
+
     def __init__(self, client: "NomosClientSync"):
         self._client = client
-    
+
     def next(self, query: str, session_data: Optional[State] = None) -> ChatResponse:
         """Send a chat message with optional session data."""
         request = ChatRequest(user_input=query, session_data=session_data)
@@ -343,16 +347,16 @@ class ChatAPISync:
 
 class SessionAPISync:
     """Synchronous Session API namespace for stateful session operations."""
-    
+
     def __init__(self, client: "NomosClientSync"):
         self._client = client
-    
+
     def init(self, initiate: bool = False) -> SessionResponse:
         """Create a new session."""
         params = {"initiate": "true"} if initiate else {}
         data = self._client._request("POST", "/session", params=params)
         return SessionResponse(**data)
-    
+
     def next(self, session_id: str, query: str) -> SessionResponse:
         """Send a message to an existing session."""
         request = Message(content=query)
@@ -362,12 +366,12 @@ class SessionAPISync:
             json_data=request.model_dump(),
         )
         return SessionResponse(**data)
-    
+
     def get_history(self, session_id: str) -> Dict[str, Any]:
         """Get the conversation history for a session."""
         data = self._client._request("GET", f"/session/{session_id}/history")
         return data
-    
+
     def end(self, session_id: str) -> Dict[str, Any]:
         """End a session."""
         return self._client._request("DELETE", f"/session/{session_id}")
@@ -395,7 +399,7 @@ class NomosClientSync:
 
         # Initialize HTTP client
         self._client = httpx.Client(timeout=timeout)
-        
+
         # Initialize API namespaces
         self.chat = ChatAPISync(self)
         self.session = SessionAPISync(self)
@@ -415,12 +419,12 @@ class NomosClientSync:
     def _get_headers(self) -> Dict[str, str]:
         """Get headers for requests including authentication."""
         headers = {"Content-Type": "application/json", **self.custom_headers}
-        
+
         if self.auth.auth_type == "jwt" and self.auth.token:
             headers["Authorization"] = f"Bearer {self.auth.token}"
         elif self.auth.auth_type == "api_key" and self.auth.token:
             headers["X-API-Key"] = self.auth.token
-        
+
         return headers
 
     def _build_url(self, endpoint: str) -> str:

@@ -39,6 +39,6 @@ __all__ = [
     "StateMachine",
     # Client classes
     "NomosClient",
-    "NomosClientSync", 
+    "NomosClientSync",
     "AuthConfig",
 ]
