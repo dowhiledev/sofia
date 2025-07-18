@@ -1,10 +1,69 @@
 # Nomos TypeScript/JavaScript SDK
 
-[![npm version](https://badge.fury.io/js/nomos-sdk.svg)](https://www.npmjs.com/package/nomos-sdk)
-[![CI](https://github.com/dowhiledev/nomos/workflows/CI%20-%20TypeScript%20SDK/badge.svg)](https://github.com/dowhiledev/nomos/actions)
+[![npm version](https://badge.fury.io/js/nomos-sdk.svg)](https://www.npmjs.com/package/nomos-## 📖 Features
+
+- **Full TypeScript Support** - Complete type safety and IntelliSense
+- **Authentication Support** - JWT and API key authentication
+- **Session Management** - Create, manage, and clean up conversation sessions
+- **Direct Chat API** - Stateless chat interactions
+- **Error Handling** - Comprehensive error handling and recovery
+- **Rate Limiting Support** - Handles rate limit responses gracefully
+- **Node.js & Browser** - Works in both environments
+- **Zero Dependencies** - Minimal footprint with only essential dependencies
+
+## 🔧 Error Handling
+
+The SDK includes comprehensive error handling with specific error types for authentication issues:
+
+```typescript
+import { NomosClient, NomosAuthError } from 'nomos-sdk';
+
+const client = new NomosClient({
+  baseUrl: 'https://your-nomos-server.com',
+  auth: { type: 'jwt', token: 'your-token' }
+});
+
+try {
+  const session = await client.createSession();
+} catch (error) {
+  if (error instanceof NomosAuthError) {
+    switch (error.status) {
+      case 401:
+        console.error('Authentication failed - check your token');
+        break;
+      case 403:
+        console.error('Access forbidden - insufficient permissions');
+        break;
+      case 429:
+        console.error('Rate limit exceeded - slow down requests');
+        break;
+    }
+  } else {
+    console.error('Other error:', error.message);
+  }
+}
+```
+
+## 🔐 Security Best Practices
+
+1. **Never expose tokens in client-side code**
+2. **Use environment variables for tokens**
+3. **Implement token refresh logic for long-running applications**
+4. **Disable token generation endpoint in production**
+
+```typescript
+// Good: Use environment variables
+const client = new NomosClient({
+  baseUrl: process.env.NOMOS_API_URL,
+  auth: {
+    type: 'jwt',
+    token: process.env.NOMOS_JWT_TOKEN
+  }
+});
+```](https://github.com/dowhiledev/nomos/workflows/CI%20-%20TypeScript%20SDK/badge.svg)](https://github.com/dowhiledev/nomos/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful TypeScript/JavaScript SDK for interacting with Nomos agents. Build conversational AI applications with ease.
+A powerful TypeScript/JavaScript SDK for interacting with Nomos agents. Build conversational AI applications with ease, now with full authentication support.
 
 ## 🚀 Quick Start
 
@@ -23,7 +82,7 @@ npm install nomos-sdk
 > const { NomosClient } = await import('nomos-sdk');
 > ```
 
-### Basic Usage
+### Basic Usage (No Authentication)
 
 ```typescript
 import { NomosClient } from 'nomos-sdk';
@@ -42,12 +101,98 @@ console.log('Response:', response.message);
 // End session
 await client.endSession(session.session_id);
 ```
-## 📖 Features
+
+### Authenticated Usage
+
+```typescript
+import { NomosClient } from 'nomos-sdk';
+
+// Initialize with authentication
+const client = new NomosClient({
+  baseUrl: 'http://localhost:8000',
+  auth: {
+    type: 'jwt', // or 'api_key'
+    token: 'your-jwt-token-or-api-key'
+  }
+});
+
+// Or set authentication later
+const client2 = new NomosClient('http://localhost:8000');
+client2.setAuth({
+  type: 'jwt',
+  token: 'your-jwt-token'
+});
+
+// Use normally - authentication headers are added automatically
+const session = await client.createSession(true);
+```
+
+## � Authentication
+
+The SDK supports two authentication methods:
+
+### JWT Authentication
+
+```typescript
+const client = new NomosClient({
+  baseUrl: 'https://your-nomos-server.com',
+  auth: {
+    type: 'jwt',
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  }
+});
+```
+
+### API Key Authentication
+
+```typescript
+const client = new NomosClient({
+  baseUrl: 'https://your-nomos-server.com',
+  auth: {
+    type: 'api_key',
+    token: 'your-api-key-here'
+  }
+});
+```
+
+### Development Token Generation
+
+For development and testing environments, you can generate JWT tokens directly:
+
+```typescript
+// Note: This endpoint should be disabled in production
+const tokenResponse = await client.generateToken({
+  user_id: 'test-user',
+  role: 'user'
+});
+
+// Use the generated token
+client.setAuth({
+  type: 'jwt',
+  token: tokenResponse.access_token
+});
+```
+
+### Managing Authentication
+
+```typescript
+// Set authentication
+client.setAuth({ type: 'jwt', token: 'your-token' });
+
+// Clear authentication
+client.clearAuth();
+
+// Authentication is automatically included in all requests
+```
+
+## �📖 Features
 
 - **Full TypeScript Support** - Complete type safety and IntelliSense
+- **Authentication Support** - JWT and API key authentication
 - **Session Management** - Create, manage, and clean up conversation sessions
 - **Direct Chat API** - Stateless chat interactions
 - **Error Handling** - Comprehensive error handling and recovery
+- **Rate Limiting Support** - Handles rate limit responses gracefully
 - **Node.js & Browser** - Works in both environments
 - **Zero Dependencies** - Minimal footprint with only essential dependencies
 
