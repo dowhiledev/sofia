@@ -46,6 +46,12 @@ NOMOS supports multiple LLM providers, allowing you to choose the best model for
     Open source models via HuggingFace
   </Card>
   <Card
+    title="Cohere"
+    href="#cohere"
+  >
+    Command R+, Command R, and more
+  </Card>
+  <Card
     title="Custom"
   >
     Use the `BaseLLM` class to implement your own provider
@@ -222,6 +228,33 @@ export HUGGINGFACE_API_TOKEN=your-token-here
 
 </CodeGroup>
 
+## Cohere
+
+<CodeGroup>
+
+```python Basic Usage
+from nomos.llms import Cohere
+
+llm = Cohere(model="command-a-03-2025")
+```
+
+```python Available Models
+llm = Cohere(model="command-a-03-2025")
+llm = Cohere(model="command-r-plus")
+llm = Cohere(model="command-r")
+llm = Cohere(model="command")
+```
+
+```bash Installation
+pip install nomos[cohere]
+```
+
+```bash Environment Variable
+export COHERE_API_KEY=your-api-key-here
+```
+
+</CodeGroup>
+
 ## YAML Configuration
 
 You can specify LLM configuration in your YAML config file:
@@ -270,6 +303,13 @@ You can specify LLM configuration in your YAML config file:
       model: meta-llama/Meta-Llama-3-8B-Instruct
     ```
   </Tab>
+  <Tab title="Cohere">
+    ```yaml
+    llm:
+      provider: cohere
+      model: command-a-03-2025
+    ```
+  </Tab>
 </Tabs>
 
 ## Advanced Configuration
@@ -298,6 +338,14 @@ llm = Anthropic(
 )
 ```
 
+```python Cohere Advanced
+llm = Cohere(
+    model="command-a-03-2025",
+    temperature=0.5,
+    max_tokens=1500
+)
+```
+
 </CodeGroup>
 
 ### YAML Advanced Configuration
@@ -320,6 +368,14 @@ llm:
   temperature: 0.3
   max_tokens: 2048
   top_p: 0.8
+```
+
+```yaml Cohere
+llm:
+  provider: cohere
+  model: command-a-03-2025
+  temperature: 0.5
+  max_tokens: 1500
 ```
 
 </CodeGroup>
@@ -443,5 +499,12 @@ For the most up-to-date list of available models, refer to the official document
     href="https://huggingface.co/models"
   >
     Explore HuggingFace model hub
+  </Card>
+  <Card
+    title="Cohere Models"
+    icon="external-link"
+    href="https://docs.cohere.com/docs/models"
+  >
+    Cohere models documentation
   </Card>
 </CardGroup>
