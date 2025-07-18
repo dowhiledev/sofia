@@ -95,7 +95,7 @@ class TestNomosClient:
         client = NomosClient("http://test", auth=auth)
 
         headers = client._get_headers()
-        expected = {"Content-Type": "application/json", "Authorization": "Bearer test-api-key"}
+        expected = {"Content-Type": "application/json", "X-API-Key": "test-api-key"}
         assert headers == expected
 
     def test_headers_with_custom_headers(self):
@@ -126,7 +126,6 @@ class TestNomosClient:
             method="GET",
             url="http://test-server:8000/health",
             headers={"Content-Type": "application/json"},
-            json=None,
             params=None,
         )
 
@@ -169,8 +168,8 @@ class TestNomosClient:
             await client.health_check()
 
     @pytest.mark.asyncio
-    async def test_create_session(self, client, mock_response):
-        """Test session creation."""
+    async def test_session_init(self, client, mock_response):
+        """Test session creation with new API."""
         mock_response.json.return_value = {
             "session_id": "test-session-123",
             "message": {"status": "created"},
@@ -179,7 +178,7 @@ class TestNomosClient:
         client._client = AsyncMock()
         client._client.request = AsyncMock(return_value=mock_response)
 
-        result = await client.create_session(initiate=True)
+        result = await client.session.init(initiate=True)
 
         assert isinstance(result, SessionResponse)
         assert result.session_id == "test-session-123"
@@ -189,13 +188,12 @@ class TestNomosClient:
             method="POST",
             url="http://test-server:8000/session",
             headers={"Content-Type": "application/json"},
-            json=None,
             params={"initiate": "true"},
         )
 
     @pytest.mark.asyncio
-    async def test_send_message(self, client, mock_response):
-        """Test sending a message."""
+    async def test_session_next(self, client, mock_response):
+        """Test sending a message with new API."""
         mock_response.json.return_value = {
             "session_id": "test-session-123",
             "message": {"response": "Hello back!"},
@@ -204,7 +202,7 @@ class TestNomosClient:
         client._client = AsyncMock()
         client._client.request = AsyncMock(return_value=mock_response)
 
-        result = await client.send_message("test-session-123", "Hello!")
+        result = await client.session.next("test-session-123", "Hello!")
 
         assert isinstance(result, SessionResponse)
         assert result.session_id == "test-session-123"
@@ -214,13 +212,13 @@ class TestNomosClient:
             method="POST",
             url="http://test-server:8000/session/test-session-123/message",
             headers={"Content-Type": "application/json"},
-            json={"content": "Hello!"},
+            content='{"content": "Hello!"}',
             params=None,
         )
 
     @pytest.mark.asyncio
-    async def test_chat(self, client, mock_response):
-        """Test chat endpoint."""
+    async def test_chat_next(self, client, mock_response):
+        """Test chat.next endpoint with new API."""
         mock_state = State(
             session_id="test-123",
             current_step_id="start",
@@ -236,7 +234,7 @@ class TestNomosClient:
         client._client = AsyncMock()
         client._client.request = AsyncMock(return_value=mock_response)
 
-        result = await client.chat(user_input="Hi there!", verbose=True)
+        result = await client.chat.next(query="Hi there!", session_data=mock_state)
 
         assert isinstance(result, ChatResponse)
         assert result.response == {"action": "respond", "response": "Hello!"}
@@ -247,31 +245,53 @@ class TestNomosClient:
             method="POST",
             url="http://test-server:8000/chat",
             headers={"Content-Type": "application/json"},
-            json={"user_input": "Hi there!"},
-            params={"verbose": "true"},
+            content='{"user_input": "Hi there!", "session_data": {"session_id": "test-123", "current_step_id": "start", "history": []}}',
+            params=None,
         )
 
     @pytest.mark.asyncio
-    async def test_quick_chat(self, client, mock_response):
-        """Test quick chat convenience method."""
-        mock_state = State(
-            session_id="test-123",
-            current_step_id="start",
-            history=[],
-        )
-
+    async def test_session_get_history(self, client, mock_response):
+        """Test getting session history with new API."""
         mock_response.json.return_value = {
-            "response": {"response": "Quick response!"},
-            "tool_output": None,
-            "session_data": mock_state.model_dump(),
+            "session_id": "test-session-123",
+            "history": [{"type": "user", "content": "Hello"}],
         }
 
         client._client = AsyncMock()
         client._client.request = AsyncMock(return_value=mock_response)
 
-        result = await client.quick_chat("Hello!")
+        result = await client.session.get_history("test-session-123")
 
-        assert result == "Quick response!"
+        assert result == {
+            "session_id": "test-session-123",
+            "history": [{"type": "user", "content": "Hello"}],
+        }
+
+        client._client.request.assert_called_once_with(
+            method="GET",
+            url="http://test-server:8000/session/test-session-123/history",
+            headers={"Content-Type": "application/json"},
+            params=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_session_end(self, client, mock_response):
+        """Test ending a session with new API."""
+        mock_response.json.return_value = {"message": "Session ended successfully"}
+
+        client._client = AsyncMock()
+        client._client.request = AsyncMock(return_value=mock_response)
+
+        result = await client.session.end("test-session-123")
+
+        assert result == {"message": "Session ended successfully"}
+
+        client._client.request.assert_called_once_with(
+            method="DELETE",
+            url="http://test-server:8000/session/test-session-123",
+            headers={"Content-Type": "application/json"},
+            params=None,
+        )
 
 
 class TestNomosClientSync:
