@@ -3,1472 +3,1070 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nomos - AI Agent Chat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Heroicons for modern icons -->
-    <script src="https://unpkg.com/@heroicons/react@2.0.18/24/outline/index.js" type="module"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Mermaid for flowchart diagrams -->
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-        window.mermaid = mermaid;
-
-        // Initialize mermaid with proper configuration
-        mermaid.initialize({
-            startOnLoad: false,  // We'll manually initialize
-            theme: 'default',
-            themeVariables: {
-                primaryColor: '#0ea5e9',
-                primaryTextColor: '#1f2937',
-                primaryBorderColor: '#0284c7',
-                lineColor: '#6b7280',
-                secondaryColor: '#f0f9ff',
-                tertiaryColor: '#e0f2fe'
-            },
-            fontFamily: 'Inter, system-ui, sans-serif',
-            fontSize: 14,
-            curve: 'basis'
-        });
-    </script>
-
-    <!-- Fallback: Load mermaid via UMD if ES modules fail -->
-    <script>
-        // Fallback loader for mermaid
-        if (!window.mermaid) {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
-            script.onload = function() {
-                if (window.mermaid) {
-                    window.mermaid.initialize({
-                        startOnLoad: false,
-                        theme: 'default',
-                        themeVariables: {
-                            primaryColor: '#0ea5e9',
-                            primaryTextColor: '#1f2937',
-                            primaryBorderColor: '#0284c7',
-                            lineColor: '#6b7280',
-                            secondaryColor: '#f0f9ff',
-                            tertiaryColor: '#e0f2fe'
-                        },
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        fontSize: 14,
-                        curve: 'basis'
-                    });
-                }
-            };
-            document.head.appendChild(script);
-        }
-    </script>
-    <!-- Inter font for modern typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        'nomos': {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                            950: '#082f49'
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out',
-                        'slide-up': 'slideUp 0.3s ease-out',
-                        'pulse-gentle': 'pulseGentle 2s infinite',
-                        'typing': 'typing 1.4s infinite'
-                    }
-                }
-            },
-            darkMode: 'class'
-        }
-    </script>
+    <title>Nomos - AI Agent Interface</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        html, body {
+            height: 100%;
+            background-color: #fafafa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
-
-        :root {
-            --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            --gradient-secondary: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            --backdrop-blur: blur(20px);
+        
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-
-        .glass-morphism {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: var(--backdrop-blur);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        .header-section {
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 1rem;
         }
-
-        .dark .glass-morphism {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        
+        .content-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
         }
-
-        .chat-bubble {
-            max-width: 85%;
-            word-wrap: break-word;
-            position: relative;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e8e8e8;
+            display: flex;
+            flex-direction: column;
         }
-
-        .chat-bubble.user {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .auth-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        #sessions-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100%;
+        }
+        
+        .messages-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-content:has(.message:not(.system)) .message.system {
+            position: static;
+            transform: none;
+            margin: 1rem auto;
+        }
+        
+        .messages-content:not(:has(.message:not(.system))) {
+            justify-content: center;
+        }
+        
+        .input-section {
+            padding: 1rem;
+            border-top: 1px solid #e8e8e8;
+            background: white;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            max-width: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message.user {
+            align-items: flex-end;
             margin-left: auto;
-            border-radius: 24px 24px 8px 24px;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
         }
-
-        .chat-bubble.assistant {
-            background: rgba(255, 255, 255, 0.9);
-            color: #1f2937;
-            margin-right: auto;
-            border-radius: 24px 24px 24px 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        
+        .message.assistant {
+            align-items: flex-start;
         }
-
-        .dark .chat-bubble.assistant {
-            background: rgba(55, 65, 81, 0.9);
-            color: #f9fafb;
-            border: 1px solid rgba(75, 85, 99, 0.3);
+        
+        .message-content {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-width: fit-content;
+            min-width: 120px;
+            word-wrap: break-word;
         }
-
+        
+        .message.user .message-content {
+            background: #363636;
+            color: white;
+        }
+        
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid #e8e8e8;
+            color: #363636;
+        }
+        
+        .message.system .message-content {
+            background: #f5f5f5;
+            color: #757575;
+            font-style: italic;
+            text-align: center;
+            margin: 0 auto;
+            max-width: 400px;
+        }
+        
         .typing-indicator {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            max-width: 80px;
         }
-
+        
         .typing-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: rgb(156, 163, 175);
+            background: #757575;
             animation: typing 1.4s infinite ease-in-out;
         }
-
+        
         .typing-dot:nth-child(1) { animation-delay: 0ms; }
         .typing-dot:nth-child(2) { animation-delay: 200ms; }
         .typing-dot:nth-child(3) { animation-delay: 400ms; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes pulseGentle {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.8; }
-        }
-
+        
         @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-10px); opacity: 1; }
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-8px); opacity: 1; }
         }
-
-        .message-animation {
-            animation: fadeIn 0.3s ease-out forwards;
+        
+        .connection-status {
+            font-size: 0.85rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            margin-bottom: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-width: 120px;
         }
-
-        /* Custom scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+        
+        .connection-status:hover {
+            opacity: 0.8;
         }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
+        
+        .connection-status:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
         }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.3);
-            border-radius: 3px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(156, 163, 175, 0.5);
-        }
-
-        /* Input animations */
-        .input-focus {
-            transition: all 0.2s ease;
-        }
-
-        .input-focus:focus {
-            transform: scale(1.01);
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-        }
-
-        /* Logo animation */
-        .logo-glow {
-            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.3));
-        }
-
-        /* Status indicators */
+        
         .status-connected {
-            background: linear-gradient(135deg, #10b981, #059669);
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+            background: #e8f5e8;
+            color: #2d5a2d;
         }
-
+        
         .status-connecting {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            animation: pulseGentle 2s infinite;
+            background: #fff3cd;
+            color: #856404;
         }
-
+        
         .status-error {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+            background: #f8d7da;
+            color: #721c24;
         }
-
-        /* Accordion improvements */
-        .accordion-content {
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+        
+        .auth-toggle {
+            display: flex;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 4px;
+            margin-bottom: 1rem;
         }
-
-        .accordion-content * {
-            color: inherit !important;
+        
+        .auth-toggle button {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.4rem 0.3rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-
-        /* Ensure proper text colors in all themes */
-        .dark .accordion-content {
-            color: #f9fafb;
+        
+        .auth-toggle button.active {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: #363636;
         }
-
-        .accordion-content {
-            color: #1f2937;
+        
+        .auth-toggle button:not(.active) {
+            color: #757575;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .is-loading {
+            pointer-events: none;
+        }
+        
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: 1px solid #e8e8e8;
+        }
+        
+        .session-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .session-item.active {
+            background-color: #e8f4fd;
+            border-color: #3273dc;
+        }
+        
+        .session-item .session-name {
+            flex: 1;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .session-item .session-delete {
+            margin-left: 0.5rem;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            text-decoration: none;
+        }
+        
+        .session-item:hover .session-delete {
+            opacity: 1;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .content-area {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e8e8e8;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .message.user {
+                margin-left: auto;
+            }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 h-screen relative overflow-hidden" id="body-root">
-    <!-- Animated background elements -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-nomos-400/20 rounded-full blur-3xl animate-pulse-gentle"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-300/10 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 2s;"></div>
-    </div>
-
-    <!-- Main container with glass morphism -->
-    <div class="relative z-10 h-full flex flex-col">
-        <header class="glass-morphism border-b border-white/20 dark:border-gray-700/50 backdrop-blur-xl">
-            <div class="w-full px-6 py-4">
-                <div class="flex justify-between items-center">
-                    <!-- Logo and title -->
-                    <div class="flex items-center space-x-4">
-                        <div class="logo-glow">
-                            <svg class="w-10 h-10 text-nomos-600 dark:text-nomos-400" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2L13.09 6.26L17 4L14.74 8.13L19 9L14.74 9.87L17 14L13.09 11.74L12 16L10.91 11.74L7 14L9.26 9.87L5 9L9.26 8.13L7 4L10.91 6.26L12 2Z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-bold bg-gradient-to-r from-nomos-600 to-nomos-800 dark:from-nomos-400 dark:to-nomos-300 bg-clip-text text-transparent">
-                                Nomos
-                            </h1>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">AI Agent Chat</p>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="level is-mobile">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h1 class="title is-4 mb-0">Nomos AI Agent</h1>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <a href="/docs" target="_blank" class="button is-small is-outlined" style="color: #3273dc; border-color: #3273dc;">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-book"></i>
+                                    </span>
+                                    <span>Docs</span>
+                                </a>
+                            </div>
+                            <div class="control">
+                                <button id="connection-status" class="connection-status status-connecting" onclick="recheckHealth()">
+                                    <span>Connecting...</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Navigation and controls -->
-                    <div class="flex items-center space-x-4">
-                        <!-- Documentation link -->
-                        <a href="/docs"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="group flex items-center space-x-2 px-4 py-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-nomos-600 dark:hover:text-nomos-400 font-medium"
-                           title="Open Documentation">
-                            <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.168 18.477 18.582 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                            </svg>
-                            <span class="hidden sm:block">Docs</span>
-                            <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-
-                        <!-- Connection status -->
-                        <div id="connection-status" class="flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connecting">
-                            <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
-                            <span>Connecting...</span>
-                        </div>
-
-                        <!-- Dark mode toggle -->
-                        <button id="dark-mode-toggle"
-                                class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group"
-                                title="Toggle dark mode">
-                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                            </svg>
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Authentication Section -->
+                <div class="auth-section">
+                    <h2 class="subtitle is-6 mb-3">Authentication</h2>
+                    
+                    <!-- Auth Type Toggle -->
+                    <div class="auth-toggle">
+                        <button id="jwt-toggle" class="active" onclick="switchAuthType('jwt')">
+                            JWT
+                        </button>
+                        <button id="api-key-toggle" onclick="switchAuthType('api_key')">
+                            API Key
+                        </button>
+                        <button id="no-auth-toggle" onclick="switchAuthType('none')">
+                            None
                         </button>
                     </div>
+                    
+                    <!-- Auth Input -->
+                    <div class="field" id="auth-input-field">
+                        <label class="label is-small" id="auth-label">JWT Token</label>
+                        <div class="control">
+                            <input 
+                                class="input is-small" 
+                                type="password" 
+                                id="auth-input" 
+                                placeholder="Enter your JWT token..."
+                            >
+                        </div>
+                        <p class="help is-size-7 mt-1" id="auth-help">
+                            Paste your JWT token to authenticate API requests
+                        </p>
+                    </div>
+                    
+                    <!-- No Auth Message -->
+                    <div class="notification is-info is-light is-small hidden" id="no-auth-message">
+                        <p class="is-size-7">
+                            <i class="fas fa-info-circle"></i>
+                            No authentication required. You can directly start chatting.
+                        </p>
+                    </div>
+                    
+                    <!-- Test Connection Button -->
+                    <button class="button is-small is-fullwidth" id="test-auth-btn" onclick="testAuthentication()">
+                        <span class="icon is-small">
+                            <i class="fas fa-check"></i>
+                        </span>
+                        <span>Test Connection</span>
+                    </button>
+                </div>
+                
+                <!-- Sidebar Content -->
+                <div class="sidebar-content">
+                    <h3 class="subtitle is-6">Chats</h3>
+                    
+                    <!-- Session List -->
+                    <div id="sessions-list" class="mb-3">
+                        <!-- Sessions will be populated here -->
+                    </div>
+                    
+                    <!-- New Chat Button -->
+                    <button class="button is-small is-fullwidth mb-2" id="new-chat-btn" onclick="startNewChat()">
+                        <span class="icon is-small">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span>New Chat</span>
+                    </button>
+                    
+                    <div class="field mb-3">
+                        <div class="control">
+                            <label class="checkbox is-small">
+                                <input type="checkbox" id="initiate-checkbox" checked>
+                                <span class="is-size-7 ml-1">Initiate conversation automatically</span>
+                            </label>
+                        </div>
+                        <p class="help is-size-7">When enabled, the agent will send an initial greeting message</p>
+                    </div>
+                    
+                    <button class="button is-small is-fullwidth is-danger is-outlined" id="clear-all-btn" onclick="clearAllSessions()" style="color: #f14668;">
+                        <span class="icon is-small">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Delete All Sessions</span>
+                    </button>
+                    
+                    <hr>
+                    
+                    <div class="content is-small">
+                        <h4 class="subtitle is-6">Tips</h4>
+                        <ul>
+                            <li>Choose authentication method: JWT, API Key, or None</li>
+                            <li>Start a new chat to begin a session</li>
+                            <li>Messages are processed in real-time</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-        </header>
-
-        <main class="flex-1 flex p-6 w-full gap-6 overflow-hidden">
-            <!-- Left panel: Agent Overview -->
-            <div class="w-2/5 flex flex-col overflow-hidden">
-                <div class="glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden flex flex-col h-full">
-                    <!-- Agent Overview header -->
-                    <div class="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 p-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="p-2 bg-nomos-500/20 rounded-xl">
-                                <svg class="w-5 h-5 text-nomos-600 dark:text-nomos-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-900 dark:text-gray-100">Agent Overview</h3>
-                                <p class="text-xs text-gray-600 dark:text-gray-400">Configuration, Statistics & Workflow Visualization</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Agent Overview content area -->
-                    <div class="flex-1 p-4 overflow-y-auto custom-scrollbar">
-                        <!-- Agent Information Section -->
-                        <div class="space-y-4 mb-6">
-                            <div class="flex items-center space-x-2 mb-3">
-                                <div class="p-1.5 bg-blue-500/20 rounded-lg">
-                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <h4 class="font-medium text-gray-900 dark:text-gray-100">Agent Information</h4>
-                            </div>
-                            <div id="agent-info-loading" class="flex items-center justify-center py-8">
-                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                            </div>
-                            <div id="agent-info-content" class="hidden space-y-4">
-                                <!-- Agent metadata will be populated here -->
-                            </div>
-                            <div id="agent-info-error" class="hidden text-left py-4 text-red-500 dark:text-red-400">
-                                <p class="text-sm">Failed to load agent information</p>
-                            </div>
-                        </div>
-
-                        <!-- Workflow Diagram Section -->
-                        <div class="space-y-4">
-                            <div class="flex items-center space-x-2 mb-3">
-                                <div class="p-1.5 bg-nomos-500/20 rounded-lg">
-                                    <svg class="w-4 h-4 text-nomos-600 dark:text-nomos-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                                <h4 class="font-medium text-gray-900 dark:text-gray-100">Workflow Diagram</h4>
-                            </div>
-                            <div id="diagram-container" class="relative bg-white/5 dark:bg-gray-900/20 rounded-xl border border-white/10 dark:border-gray-700/30 p-4 min-h-96">
-                                <div id="loading-diagram" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-nomos-500"></div>
-                                    <p class="text-sm font-medium mt-2">Loading workflow diagram...</p>
-                                </div>
-                                <div id="mermaid-diagram" class="w-full hidden transition-transform duration-200 origin-center" style="transform-origin: center center;"></div>
-                                <div id="diagram-error" class="hidden absolute inset-0 flex flex-col items-center justify-center text-red-500 dark:text-red-400">
-                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <p class="text-sm font-medium text-center mt-2">Failed to load diagram</p>
-                                    <button class="text-xs px-3 py-1 bg-red-500/20 rounded-lg hover:bg-red-500/30 transition-colors mt-2" onclick="window.loadAgentDiagram()">Retry</button>
+            
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <!-- Messages Container -->
+                <div class="messages-container" id="messages-container">
+                    <div class="messages-wrapper">
+                        <div class="messages-content" id="messages-content">
+                            <div class="message system">
+                                <div class="message-content">
+                                    Welcome to Nomos AI Agent. Select your authentication method and start a new chat to begin.
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Right panel: Chat Interface -->
-            <div class="w-3/5 flex flex-col overflow-hidden">
-                <div class="flex-1 glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden flex flex-col">
-                    <!-- Chat header with action buttons -->
-                    <div class="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 p-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-green-500/20 rounded-xl">
-                                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Chat Interface</h3>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">Conversation with Nomos</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <button
-                                    id="new-chat-btn"
-                                    class="group flex items-center space-x-2 px-4 py-2 glass-morphism rounded-xl hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-nomos-600 dark:hover:text-nomos-400 font-medium border border-white/30 dark:border-gray-700/50"
-                                    title="Start a new chat">
-                                    <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                    </svg>
-                                    <span class="hidden sm:block">New Chat</span>
-                                </button>
-
-                                <button
-                                    id="clear-storage-btn"
-                                    class="group flex items-center space-x-2 px-4 py-2 glass-morphism rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800"
-                                    title="Clear all chat history">
-                                    <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                    <span class="hidden sm:block">Clear</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col flex-1 overflow-hidden">
-                        <!-- Messages area -->
-                        <div id="chat-container" class="flex-1 p-6 overflow-y-auto custom-scrollbar">
-                            <div id="messages" class="space-y-4 min-h-full flex flex-col justify-end"></div>
-
-                            <!-- Typing indicator -->
-                            <div id="typing-indicator" class="typing-indicator text-gray-500 dark:text-gray-400 hidden py-4 animate-fade-in">
-                                <div class="flex items-center space-x-2 px-4 py-3 bg-white/60 dark:bg-gray-800/60 rounded-2xl backdrop-blur-sm border border-white/30 dark:border-gray-700/50 max-w-fit">
-                                    <div class="flex space-x-1">
-                                        <div class="typing-dot"></div>
-                                        <div class="typing-dot"></div>
-                                        <div class="typing-dot"></div>
-                                    </div>
-                                    <span class="text-sm font-medium">Nomos is thinking...</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Input area -->
-                        <div class="flex-none border-t border-white/20 dark:border-gray-700/50 p-6 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
-                            <form id="message-form" class="flex gap-4 items-end">
-                                <div class="flex-1 relative">
-                                    <textarea
-                                        id="user-input"
-                                        class="w-full glass-morphism border border-white/30 dark:border-gray-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-nomos-500/50 focus:border-nomos-400 bg-white/70 dark:bg-gray-900/70 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 input-focus resize-none backdrop-blur-sm text-base"
-                                        placeholder="Ask Nomos anything..."
-                                        required
-                                        rows="1"
-                                        style="min-height: 56px; max-height: 200px;"
-                                    ></textarea>
-
-                                    <!-- Character counter (optional) -->
-                                    <div class="absolute bottom-2 right-4 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">
-                                        <span id="char-count">0</span>/2000
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    class="group relative px-6 py-4 bg-gradient-to-r from-nomos-500 to-nomos-600 hover:from-nomos-600 hover:to-nomos-700 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nomos-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    id="send-button"
+                
+                <!-- Typing Indicator -->
+                <div class="typing-indicator hidden" id="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                
+                <!-- Input Section -->
+                <div class="input-section">
+                    <form id="message-form">
+                        <div class="field has-addons">
+                            <div class="control is-expanded">
+                                <input 
+                                    class="input" 
+                                    type="text" 
+                                    id="message-input" 
+                                    placeholder="Type your message..."
+                                    disabled
                                 >
-                                    <div class="flex items-center space-x-2">
-                                        <span class="hidden sm:block">Send</span>
-                                        <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                                        </svg>
-                                    </div>
+                            </div>
+                            <div class="control">
+                                <button class="button is-primary" type="submit" id="send-btn" disabled>
+                                    <span class="icon">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </span>
                                 </button>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <!-- Modern Lucide Icons for better performance -->
     <script>
-        // Initialize Lucide icons when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+        // Global state
+        let authType = 'jwt';
+        let authToken = '';
+        let currentSessionId = null;
+        let sessions = {};
+        let isProcessing = false;
+
+        // DOM elements
+        const messagesContainer = document.getElementById('messages-container');
+        const messagesContent = document.getElementById('messages-content');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const connectionStatus = document.getElementById('connection-status');
+        const authInput = document.getElementById('auth-input');
+        const authLabel = document.getElementById('auth-label');
+        const authHelp = document.getElementById('auth-help');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved auth from localStorage
+            const savedAuthType = localStorage.getItem('nomosAuthType');
+            const savedAuthToken = localStorage.getItem('nomosAuthToken');
+            
+            if (savedAuthType) {
+                switchAuthType(savedAuthType);
+            }
+            
+            if (savedAuthToken) {
+                authInput.value = savedAuthToken;
+                authToken = savedAuthToken;
+                
+                // Enable message input if we have auth token
+                if (authType !== 'none') {
+                    messageInput.disabled = false;
+                    sendBtn.disabled = false;
+                }
+            }
+
+            // Load session data
+            const savedSessions = localStorage.getItem('nomosSessions');
+            const savedCurrentSessionId = localStorage.getItem('nomosCurrentSessionId');
+            
+            if (savedSessions) {
+                try {
+                    sessions = JSON.parse(savedSessions);
+                    if (savedCurrentSessionId && sessions[savedCurrentSessionId]) {
+                        currentSessionId = savedCurrentSessionId;
+                    }
+                    renderSessionsList();
+                    if (currentSessionId) {
+                        loadSessionHistory(currentSessionId);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse sessions data:', e);
+                    localStorage.removeItem('nomosSessions');
+                    localStorage.removeItem('nomosCurrentSessionId');
+                }
+            }
+
+            checkConnection();
+        });
+
+        // Auth type switching
+        function switchAuthType(type) {
+            authType = type;
+            localStorage.setItem('nomosAuthType', type);
+            
+            // Update UI
+            document.getElementById('jwt-toggle').classList.toggle('active', type === 'jwt');
+            document.getElementById('api-key-toggle').classList.toggle('active', type === 'api_key');
+            document.getElementById('no-auth-toggle').classList.toggle('active', type === 'none');
+            
+            const authInputField = document.getElementById('auth-input-field');
+            const noAuthMessage = document.getElementById('no-auth-message');
+            const testAuthBtn = document.getElementById('test-auth-btn');
+            
+            if (type === 'none') {
+                // Hide auth input and show no-auth message
+                authInputField.classList.add('hidden');
+                noAuthMessage.classList.remove('hidden');
+                testAuthBtn.textContent = 'Test Connection';
+                
+                // Enable message input immediately for no-auth
+                authToken = 'no-auth';
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                // Show auth input and hide no-auth message
+                authInputField.classList.remove('hidden');
+                noAuthMessage.classList.add('hidden');
+                testAuthBtn.innerHTML = '<span class="icon is-small"><i class="fas fa-check"></i></span><span>Test Connection</span>';
+                
+                if (type === 'jwt') {
+                    authLabel.textContent = 'JWT Token';
+                    authInput.placeholder = 'Enter your JWT token...';
+                    authHelp.textContent = 'Paste your JWT token to authenticate API requests';
+                } else {
+                    authLabel.textContent = 'API Key';
+                    authInput.placeholder = 'Enter your API key...';
+                    authHelp.textContent = 'Paste your API key to authenticate API requests';
+                }
+                
+                // Clear and re-bind auth input
+                authInput.value = '';
+                authToken = '';
+                localStorage.removeItem('nomosAuthToken');
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+            }
+        }
+
+        // Save auth token
+        authInput.addEventListener('input', function() {
+            authToken = this.value.trim();
+            localStorage.setItem('nomosAuthToken', authToken);
+            
+            // Enable/disable message input based on auth (only for jwt/api_key modes)
+            if (authType !== 'none') {
+                const hasAuth = authToken.length > 0;
+                messageInput.disabled = !hasAuth;
+                sendBtn.disabled = !hasAuth;
             }
         });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const messagesContainer = document.getElementById('messages');
-            const messageForm = document.getElementById('message-form');
-            const userInput = document.getElementById('user-input');
-            const newChatBtn = document.getElementById('new-chat-btn');
-            const clearStorageBtn = document.getElementById('clear-storage-btn');
-            const typingIndicator = document.getElementById('typing-indicator');
-            const connectionStatus = document.getElementById('connection-status');
-            const bodyRoot = document.getElementById('body-root');
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
 
-            let sessionData = null;
-            let isProcessingRequest = false;
-            let accordionCounter = 0;
+        // Test authentication
+        async function testAuthentication() {
+            if (authType !== 'none' && !authToken) {
+                showMessage('system', 'Please enter an authentication token first.');
+                return;
+            }
 
-            // Agent diagram loading functionality
-            async function loadAgentDiagram() {
-                const loadingEl = document.getElementById('loading-diagram');
-                const diagramEl = document.getElementById('mermaid-diagram');
-                const errorEl = document.getElementById('diagram-error');
+            const testBtn = document.getElementById('test-auth-btn');
+            const originalContent = testBtn.innerHTML;
+            testBtn.classList.add('is-loading');
+            testBtn.disabled = true;
 
-                // Show loading state
-                loadingEl.classList.remove('hidden');
-                diagramEl.classList.add('hidden');
-                errorEl.classList.add('hidden');
-
-                try {
-                    const response = await fetch('/config');
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    const config = await response.json();
-
-                    // Get the Mermaid diagram code from the response
-                    const mermaidCode = config.visualization?.mermaid_flowchart;
-
-                    if (!mermaidCode) {
-                        throw new Error('No diagram data found in configuration');
-                    }
-
-                    // Hide loading, show diagram container
-                    loadingEl.classList.add('hidden');
-                    diagramEl.classList.remove('hidden');
-
-                    // Clear any existing diagram
-                    diagramEl.innerHTML = '';
-
-                    // Check if Mermaid is available
-
-                    if (window.mermaid) {
-
-                        // Method 1: Try using mermaid.render (newer API)
-                        try {
-                            const diagramId = 'agent-flow-' + Date.now();
-                            const { svg } = await window.mermaid.render(diagramId, mermaidCode);
-                            diagramEl.innerHTML = svg;
-                            return;
-                        } catch (renderError) {
-                            console.warn('Render method failed:', renderError);
-                        }
-
-                        // Method 2: Fallback to mermaid.mermaidAPI.render
-                        try {
-                            const diagramId = 'agent-flow-' + Date.now();
-
-                            if (window.mermaid.mermaidAPI && window.mermaid.mermaidAPI.render) {
-                                window.mermaid.mermaidAPI.render(diagramId, mermaidCode, (svg) => {
-                                    diagramEl.innerHTML = svg;
-                                });
-                                return;
-                            }
-                        } catch (apiError) {
-                            console.warn('MermaidAPI method failed:', apiError);
-                        }
-
-                        // Method 3: Direct innerHTML approach
-                        try {
-                            const diagramDiv = document.createElement('div');
-                            diagramDiv.className = 'mermaid';
-                            diagramDiv.textContent = mermaidCode;
-                            diagramEl.appendChild(diagramDiv);
-
-                            // Reinitialize mermaid
-                            window.mermaid.init(undefined, diagramDiv);
-                            return;
-                        } catch (initError) {
-                            console.warn('Init method failed:', initError);
-                        }
-
-                        throw new Error('All mermaid rendering methods failed');
-                    } else {
-                        throw new Error('Mermaid library not loaded');
-                    }
-
-                } catch (error) {
-                    console.error('Failed to load agent diagram:', error);
-
-                    // Show error state
-                    loadingEl.classList.add('hidden');
-                    diagramEl.classList.add('hidden');
-                    errorEl.classList.remove('hidden');
-
-                    // Update error message
-                    const errorMsg = errorEl.querySelector('p');
-                    if (errorMsg) {
-                        errorMsg.textContent = `Failed to load diagram: ${error.message}`;
-                    }
+            try {
+                // Test auth by making a simple API call
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Only add Authorization header if not in no-auth mode
+                if (authType !== 'none') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
                 }
-            }
-
-            // Make loadAgentDiagram globally accessible
-            window.loadAgentDiagram = loadAgentDiagram;
-
-            // Initialize both diagram and agent info loading on page load
-            loadAgentDiagram();
-            loadAgentInfo();
-
-            // Add refresh diagram button functionality
-            const refreshBtn = document.getElementById('refresh-diagram');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', loadAgentDiagram);
-            }
-
-            // Add refresh agent info button functionality
-            const refreshAgentInfoBtn = document.getElementById('refresh-agent-info');
-            if (refreshAgentInfoBtn) {
-                refreshAgentInfoBtn.addEventListener('click', loadAgentInfo);
-            }
-
-            // Character counter functionality
-            const charCount = document.getElementById('char-count');
-            if (userInput && charCount) {
-                userInput.addEventListener('input', () => {
-                    charCount.textContent = userInput.value.length;
-
-                    // Auto-resize textarea
-                    userInput.style.height = 'auto';
-                    userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
-                });
-
-                // Handle Enter key (send message) vs Shift+Enter (new line)
-                userInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                    }
-                });
-            }
-
-            // Helper function to escape HTML
-            function escapeHtml(unsafe) {
-                if (unsafe === undefined || unsafe === null) {
-                    return '';
-                }
-                return String(unsafe)
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
-            // Function to format message with markdown-like syntax
-            function formatMessage(message) {
-                if (message === undefined || message === null) {
-                    return '';
-                }
-
-                // Basic markdown-like formatting
-                let formatted = escapeHtml(message);
-
-                // Convert code blocks
-                formatted = formatted.replace(/```([^`]+)```/g, '<pre class="bg-gray-800 text-white p-2 rounded my-2 overflow-x-auto">$1</pre>');
-
-                // Convert inline code
-                formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
-
-                // Convert bold text
-                formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-                // Convert italic text
-                formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-                // Convert newlines to <br>
-                formatted = formatted.replace(/\n/g, '<br>');
-
-                return formatted;
-            }
-
-            // Simple console logger
-            function log(message) {
-            }
-
-            // Function to create a Material Tailwind accordion
-            function createAccordion(headerText, headerClass, content) {
-                accordionCounter++;
-                const id = `accordion-${accordionCounter}`;
-                const contentId = `content-${accordionCounter}`;
-                const iconId = `icon-${accordionCounter}`;
-
-                const divElement = document.createElement('div');
-                // Modern glass morphism accordion styling
-                divElement.className = 'glass-morphism border border-white/20 dark:border-gray-700/30 mt-2 mb-3 rounded-2xl overflow-hidden backdrop-blur-sm';
-
-                divElement.innerHTML = `
-                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t-2xl flex justify-between items-center py-3 px-4 hover:bg-white/20 dark:hover:bg-gray-800/20 transition-all duration-200">
-                        <span class="font-medium">${headerText}</span>
-                        <span id="${iconId}" class="transition-transform duration-300 ease-out">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                                stroke="currentColor" class="w-4 h-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </span>
-                    </button>
-                    <div id="${contentId}" class="accordion-content bg-white/30 dark:bg-gray-800/30 px-4 pb-3 pt-2 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-out" style="max-height: 0; opacity: 0;">
-                        <div class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">${content}</div>
-                    </div>
-                `;
-
-                return divElement;
-            }
-
-            // Add global function to toggle accordion
-            window.toggleAccordion = function(contentId, iconId) {
-                const content = document.getElementById(contentId);
-                const icon = document.getElementById(iconId);
-
-                if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-                    // Collapse
-                    content.style.maxHeight = '0px';
-                    content.style.opacity = '0';
-                    content.style.paddingTop = '0px';
-                    content.style.paddingBottom = '0px';
-                    icon.classList.remove('rotate-180');
-                } else {
-                    // Expand
-                    content.style.maxHeight = content.scrollHeight + 20 + "px"; // Add padding
-                    content.style.opacity = '1';
-                    content.style.paddingTop = '8px';
-                    content.style.paddingBottom = '12px';
-                    icon.classList.add('rotate-180');
-                }
-            };
-
-            // Function to add a message to the UI
-            function addMessageToUI(role, content, extras = {}) {
-                try {
-                    // Check if content is undefined or null
-                    if (content === undefined || content === null) {
-                        content = "Error: Received empty message content";
-                    }
-
-                    const messageElement = document.createElement('div');
-                    messageElement.className = 'message-animation';
-
-                    // Detect if content is a JSON object/array (not a string)
-                    let isJson = false;
-                    let jsonContent = null;
-                    if (role === 'assistant' && typeof content === 'object' && content !== null) {
-                        isJson = true;
-                        jsonContent = content;
-                    } else if (role === 'assistant' && typeof content === 'string') {
-                        // Try to parse as JSON if it looks like an object/array string
-                        if ((content.trim().startsWith('{') && content.trim().endsWith('}')) || (content.trim().startsWith('[') && content.trim().endsWith(']'))) {
-                            try {
-                                jsonContent = JSON.parse(content);
-                                isJson = true;
-                            } catch (e) {
-                                isJson = false;
-                            }
-                        }
-                    }
-
-                    if (role === 'user') {
-                        messageElement.className += ' flex justify-end mb-4';
-                        messageElement.innerHTML = `
-                            <div class="chat-bubble user p-4 shadow-lg animate-fade-in">
-                                ${escapeHtml(content)}
-                            </div>
-                        `;
-                    } else if (role === 'assistant') {
-                        messageElement.className += ' flex flex-col justify-start mb-4';
-
-                        // 1. Reasoning
-                        if (extras.reasoning && extras.reasoning.length > 0) {
-                            const reasoningContent = extras.reasoning.map(r => `<li>${escapeHtml(r)}</li>`).join('');
-                            const reasoningHtml = `<ul class="list-disc pl-5 text-sm">${reasoningContent}</ul>`;
-                            const accordion = createAccordion(
-                                'View reasoning',
-                                'text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 transition',
-                                reasoningHtml
-                            );
-                            messageElement.appendChild(accordion);
-                        }
-
-                        // 2. Step id
-                        if (extras.nextStepId) {
-                            const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
-                            const accordion = createAccordion(
-                                'View step id',
-                                'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition',
-                                stepTransitionHtml
-                            );
-                            messageElement.appendChild(accordion);
-                        }
-
-                        // 3. Tool calls (if any)
-                        if (extras.toolCalls && Array.isArray(extras.toolCalls)) {
-                            extras.toolCalls.forEach(toolCall => {
-                                const accordion = createAccordion(
-                                    'Tool Call',
-                                    'text-xs text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition',
-                                    `<div>${escapeHtml(toolCall)}</div>`
-                                );
-                                messageElement.appendChild(accordion);
-                            });
-                        }
-
-                        // 4. Tool outputs (if any)
-                        if (extras.toolOutputs && Array.isArray(extras.toolOutputs)) {
-                            extras.toolOutputs.forEach(toolOutput => {
-                                const accordion = createAccordion(
-                                    'Tool Result',
-                                    'text-xs text-green-700 bg-green-50 hover:bg-green-100 transition',
-                                    `<div>${escapeHtml(toolOutput)}</div>`
-                                );
-                                messageElement.appendChild(accordion);
-                            });
-                        }
-
-                        // 5. Response (main message)
-                        let messageHtml = '';
-                        if (typeof content === 'object' && content !== null) {
-                            messageHtml = `
-                                <div class="chat-bubble assistant p-4 shadow-lg animate-fade-in">
-                                    <pre class="whitespace-pre-wrap text-sm font-mono">${escapeHtml(JSON.stringify(content, null, 2))}</pre>
-                                </div>
-                            `;
-                        } else {
-                            messageHtml = `
-                                <div class="chat-bubble assistant p-4 shadow-lg animate-fade-in">
-                                    ${formatMessage(content)}
-                                </div>
-                            `;
-                        }
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = 'flex justify-start';
-                        messageDiv.innerHTML = messageHtml;
-                        messageElement.appendChild(messageDiv);
-
-                        // 6. Suggestions
-                        if (extras.suggestions && Array.isArray(extras.suggestions) && extras.suggestions.length > 0) {
-                            const suggestionsDiv = document.createElement('div');
-                            suggestionsDiv.className = 'flex flex-wrap gap-2 mt-2';
-                            extras.suggestions.forEach(suggestion => {
-                                const btn = document.createElement('button');
-                                btn.type = 'button';
-                                btn.className = 'glass-morphism border border-nomos-200 dark:border-nomos-700 text-nomos-700 dark:text-nomos-300 px-4 py-2 rounded-full hover:bg-nomos-100 dark:hover:bg-nomos-800 focus:outline-none focus:ring-2 focus:ring-nomos-400 transition-all text-sm font-medium backdrop-blur-sm';
-                                btn.textContent = suggestion;
-                                btn.onclick = () => {
-                                    userInput.value = suggestion;
-                                    messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                                };
-                                suggestionsDiv.appendChild(btn);
-                            });
-                            messageElement.appendChild(suggestionsDiv);
-                        }
-                    } else if (role === 'tool_call') {
-                        messageElement.className += ' flex justify-start mb-3';
-                        // Make tool call collapsible (default collapsed)
-                        const accordion = createAccordion(
-                            'Tool Call',
-                            'text-xs text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition',
-                            `<div>${escapeHtml(content)}</div>`
-                        );
-                        // Collapse by default
-                        setTimeout(() => {
-                            const contentDiv = accordion.querySelector('.accordion-content');
-                            if (contentDiv) {
-                                contentDiv.style.maxHeight = '0px';
-                                contentDiv.style.opacity = '0';
-                                contentDiv.style.paddingTop = '0px';
-                                contentDiv.style.paddingBottom = '0px';
-                            }
-                        }, 0);
-                        messageElement.appendChild(accordion);
-                    } else if (role === 'tool') {
-                        messageElement.className += ' flex justify-start mb-3';
-                        // Make tool result collapsible (default collapsed)
-                        const accordion = createAccordion(
-                            'Tool Result',
-                            'text-xs text-green-700 bg-green-50 hover:bg-green-100 transition',
-                            `<div>${escapeHtml(content)}</div>`
-                        );
-                        // Collapse by default
-                        setTimeout(() => {
-                            const contentDiv = accordion.querySelector('.accordion-content');
-                            if (contentDiv) {
-                                contentDiv.style.maxHeight = '0px';
-                                contentDiv.style.opacity = '0';
-                                contentDiv.style.paddingTop = '0px';
-                                contentDiv.style.paddingBottom = '0px';
-                            }
-                        }, 0);
-                        messageElement.appendChild(accordion);
-                    } else if (role === 'system') {
-                        messageElement.className += ' flex justify-center mb-4';
-                        messageElement.innerHTML = `
-                            <div class="glass-morphism border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-2xl p-4 text-sm backdrop-blur-sm shadow-lg max-w-md text-center animate-fade-in">
-                                <div class="flex items-center justify-center space-x-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>${escapeHtml(content)}</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    // Check if messagesContainer exists
-                    if (!messagesContainer) {
-                        return;
-                    }
-
-                    messagesContainer.appendChild(messageElement);
-
-                    // Ensure immediate scroll to bottom with multiple fallbacks
-                    const scrollToBottom = () => {
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    };
-
-                    // Immediate scroll
-                    scrollToBottom();
-
-                    // Delayed scroll after DOM updates
-                    setTimeout(scrollToBottom, 50);
-                    setTimeout(scrollToBottom, 150);
-
-                    // Use smooth scroll for the final adjustment
-                    setTimeout(() => {
-                        messagesContainer.scrollTo({
-                            top: messagesContainer.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 200);
-                } catch (e) {
-                    console.error('Error adding message to UI:', e);
-                }
-            }
-
-            // Function to clear all chat data
-            function clearChatData() {
-                sessionData = null;
-                localStorage.removeItem('nomosSessionData');
-                messagesContainer.innerHTML = '';
-            }
-
-            // Check connection and initialize
-            log('Checking server connection...');
-            checkServerAndInitialize();
-
-            function checkServerAndInitialize() {
-                connectionStatus.innerHTML = `
-                    <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
-                    <span>Connecting...</span>
-                `;
-                connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connecting';
-
-                // Set flag to prevent concurrent requests
-                if (isProcessingRequest) {
-                    return;
-                }
-
-                isProcessingRequest = true;
-
-                fetch('/chat', {
+                
+                const response = await fetch('/session?initiate=false', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_input: null,
-                        session_data: null
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Server error: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    connectionStatus.innerHTML = `
-                        <div class="w-2 h-2 rounded-full bg-current"></div>
-                        <span>Connected</span>
-                    `;
-                    connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connected text-white';
+                    headers: headers
+                });
 
-                    // Try to restore session or create a new one
-                    initializeChat();
-                })
-                .catch(error => {
-                    console.error('Connection error:', error);
-                    connectionStatus.innerHTML = `
-                        <div class="w-2 h-2 rounded-full bg-current"></div>
-                        <span>Connection Failed</span>
-                    `;
-                    connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-error text-white';
-                    addMessageToUI('system', `Server connection error: ${error.message}. Make sure the server is running at http://localhost:8000`);
-                })
-                .finally(() => {
-                    isProcessingRequest = false;
+                if (response.ok) {
+                    updateConnectionStatus('connected', 'Authentication successful');
+                    if (authType === 'none') {
+                        showMessage('system', 'Connection successful! No authentication required. You can start chatting.');
+                    } else {
+                        showMessage('system', 'Authentication successful! You can now start chatting.');
+                    }
+                    
+                    // Enable message input
+                    messageInput.disabled = false;
+                    sendBtn.disabled = false;
+                } else {
+                    throw new Error(`Authentication failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Auth test failed:', error);
+                updateConnectionStatus('error', 'Authentication failed');
+                showMessage('system', `Authentication failed: ${error.message}`);
+            } finally {
+                testBtn.classList.remove('is-loading');
+                testBtn.disabled = false;
+                testBtn.innerHTML = originalContent;
+            }
+        }
+
+        // Check connection
+        async function checkConnection() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    updateConnectionStatus('connected', 'Server connected');
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                updateConnectionStatus('error', 'Connection failed');
+            }
+        }
+
+        // Recheck health when button is clicked
+        async function recheckHealth() {
+            const statusBtn = document.getElementById('connection-status');
+            const originalContent = statusBtn.innerHTML;
+            
+            // Disable button and show loading state
+            statusBtn.disabled = true;
+            statusBtn.innerHTML = '<span>Checking...</span>';
+            
+            try {
+                await checkConnection();
+            } finally {
+                // Re-enable button after check completes
+                setTimeout(() => {
+                    statusBtn.disabled = false;
+                }, 500); // Small delay to show the check happened
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(status, message) {
+            connectionStatus.className = `connection-status status-${status}`;
+            connectionStatus.innerHTML = `<span>${message}</span>`;
+        }
+
+        // Show message in chat
+        function showMessage(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            messagesContent.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Sessions management
+        function renderSessionsList() {
+            const sessionsList = document.getElementById('sessions-list');
+            sessionsList.innerHTML = '';
+            
+            Object.entries(sessions).forEach(([sessionId, sessionInfo]) => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = `session-item ${sessionId === currentSessionId ? 'active' : ''}`;
+                sessionItem.onclick = () => switchToSession(sessionId);
+                
+                sessionItem.innerHTML = `
+                    <span class="session-name">${sessionInfo.name}</span>
+                    <button class="button is-small is-text session-delete" onclick="event.stopPropagation(); deleteSession('${sessionId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                sessionsList.appendChild(sessionItem);
+            });
+        }
+
+        function switchToSession(sessionId) {
+            if (sessionId === currentSessionId) return;
+            
+            currentSessionId = sessionId;
+            localStorage.setItem('nomosCurrentSessionId', currentSessionId);
+            renderSessionsList();
+            loadSessionHistory(sessionId);
+        }
+
+        async function deleteSession(sessionId) {
+            if (confirm('Are you sure you want to delete this session?')) {
+                const session = sessions[sessionId];
+                
+                // Call server delete endpoint if we have a server session ID
+                if (session && session.serverSessionId) {
+                    try {
+                        const headers = {};
+                        if (authType !== 'none') {
+                            headers['Authorization'] = `Bearer ${authToken}`;
+                        }
+                        
+                        await fetch(`/session/${session.serverSessionId}`, {
+                            method: 'DELETE',
+                            headers: headers
+                        });
+                    } catch (error) {
+                        console.error('Failed to delete session on server:', error);
+                        // Continue with local deletion even if server call fails
+                    }
+                }
+                
+                // Delete from local storage
+                delete sessions[sessionId];
+                
+                if (sessionId === currentSessionId) {
+                    const remainingSessions = Object.keys(sessions);
+                    if (remainingSessions.length > 0) {
+                        switchToSession(remainingSessions[0]);
+                    } else {
+                        currentSessionId = null;
+                        clearMessages();
+                        showMessage('system', 'No active sessions. Create a new session to start chatting.');
+                    }
+                }
+                
+                saveSessionsToStorage();
+                renderSessionsList();
+            }
+        }
+
+        async function loadSessionHistory(sessionId) {
+            const session = sessions[sessionId];
+            if (!session) return;
+            
+            clearMessages();
+            
+            // Load from local storage only
+            if (session.messages && session.messages.length > 0) {
+                session.messages.forEach(msg => {
+                    showMessage(msg.role, msg.content);
                 });
             }
+            
+            if (!session.messages || session.messages.length === 0) {
+                showMessage('system', `Switched to ${session.name}. Start a new chat to begin conversation.`);
+            }
+        }
 
-            function initializeChat() {
-                // Only restore from localStorage or create new if we're not already processing
-                if (isProcessingRequest) {
-                    return;
-                }
+        function saveSessionsToStorage() {
+            localStorage.setItem('nomosSessions', JSON.stringify(sessions));
+            if (currentSessionId) {
+                localStorage.setItem('nomosCurrentSessionId', currentSessionId);
+            }
+        }
 
-                // Check for existing session in localStorage
-                if (localStorage.getItem('nomosSessionData')) {
-                    try {
-                        sessionData = JSON.parse(localStorage.getItem('nomosSessionData'));
+        function clearMessages() {
+            messagesContent.innerHTML = '';
+        }
 
-                        // Render chat history only if history is present and not empty
-                        if (sessionData.history && sessionData.history.length > 0) {
-                            renderChatHistory(sessionData);
-                        } else {
-                            // If no history, create a new session
-                            createNewSession(true);
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse session data:', e);
-                        localStorage.removeItem('nomosSessionData');
-                        createNewSession(true);
-                    }
-                } else {
-                    // If no session data, create a new session
-                    createNewSession(true);
-                }
+        // Start new chat
+        async function startNewChat() {
+            if (authType !== 'none' && !authToken) {
+                showMessage('system', 'Please authenticate first.');
+                return;
             }
 
-            // Load and display agent information
-            async function loadAgentInfo() {
-                const loadingEl = document.getElementById('agent-info-loading');
-                const contentEl = document.getElementById('agent-info-content');
-                const errorEl = document.getElementById('agent-info-error');
+            if (isProcessing) return;
+            isProcessing = true;
 
-                // Show loading state
-                loadingEl.classList.remove('hidden');
-                contentEl.classList.add('hidden');
-                errorEl.classList.add('hidden');
+            const newChatBtn = document.getElementById('new-chat-btn');
+            const initiateCheckbox = document.getElementById('initiate-checkbox');
+            const shouldInitiate = initiateCheckbox.checked;
+            
+            newChatBtn.classList.add('is-loading');
 
-                try {
-                    const response = await fetch('/config');
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
+            try {
+                showMessage('system', 'Starting new chat session...');
 
-                    const config = await response.json();
-
-                    // Hide loading, show content
-                    loadingEl.classList.add('hidden');
-                    contentEl.classList.remove('hidden');
-
-                    // Clear existing content
-                    contentEl.innerHTML = '';
-
-                    // Create simplified agent information display - only formatted name and persona
-                    const infoHTML = `
-                        <!-- Agent Name -->
-                        <div class="space-y-3">
-                            <div class="text-left">
-                                <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">${config.metadata?.formatted_name || config.metadata?.name || 'Unknown Agent'}</h4>
-                                <div class="w-16 h-0.5 bg-gradient-to-r from-nomos-500 to-blue-500 mt-2 rounded-full"></div>
-                            </div>
-                        </div>
-
-                        <!-- Persona -->
-                        ${config.metadata?.persona ? `
-                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-4 mt-4">
-                            <div class="text-left">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">Agent Persona</span>
-                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-xl p-4 border border-white/20 dark:border-gray-700/30">
-                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-left">${config.metadata.persona}</p>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-                    `;
-
-                    contentEl.innerHTML = infoHTML;
-
-                } catch (error) {
-                    console.error('Failed to load agent information:', error);
-
-                    // Show error state
-                    loadingEl.classList.add('hidden');
-                    contentEl.classList.add('hidden');
-                    errorEl.classList.remove('hidden');
-
-                    // Update error message
-                    const errorMsg = errorEl.querySelector('p');
-                    if (errorMsg) {
-                        errorMsg.textContent = `Failed to load agent information: ${error.message}`;
-                    }
-                }
-            }
-
-            // Make loadAgentInfo globally accessible
-            window.loadAgentInfo = loadAgentInfo;
-
-            // Initialize agent information loading on page load
-            loadAgentInfo();
-
-            // Handle form submission
-            messageForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const userMessage = userInput.value.trim();
-                if (!userMessage) return;
-
-                // Disable send button and show loading state
-                const sendButton = document.getElementById('send-button');
-                sendButton.disabled = true;
-                sendButton.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        <span class="hidden sm:block">Sending...</span>
-                    </div>
-                `;
-
-                // Add user message to UI
-                addMessageToUI('user', userMessage);
-                userInput.value = '';
-                userInput.style.height = 'auto';
-                charCount.textContent = '0';
-
-                // Show typing indicator
-                typingIndicator.classList.remove('hidden');
-
-                try {
-                    // Send message to server
-                    await sendMessage(userMessage);
-                } catch (error) {
-                    console.error('Error sending message:', error);
-                    addMessageToUI('system', 'Error: Failed to send message. Please try again.');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Only add Authorization header if not in no-auth mode
+                if (authType !== 'none') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
                 }
 
-                // Hide typing indicator and restore send button
-                typingIndicator.classList.add('hidden');
-                sendButton.disabled = false;
-                sendButton.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <span class="hidden sm:block">Send</span>
-                        <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </div>
-                `;
-            });
+                const response = await fetch(`/session?initiate=${shouldInitiate}`, {
+                    method: 'POST',
+                    headers: headers
+                });
 
-            // Create a new session
-            newChatBtn.addEventListener('click', () => {
-                // Clear session data before creating a new session
-                sessionData = null;
-                localStorage.removeItem('nomosSessionData');
-                messagesContainer.innerHTML = '';
-                createNewSession(true);
-            });
-
-            // Clear local storage
-            clearStorageBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to clear all chat history?')) {
-                    clearChatData();
-                    createNewSession(true);
-                }
-            });
-
-            // Function to create a new session
-            async function createNewSession(initiate = false) {
-                // Prevent multiple session creation calls
-                if (isProcessingRequest) {
-                    return;
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
                 }
 
-                isProcessingRequest = true;
-                messagesContainer.innerHTML = '';
-                typingIndicator.classList.remove('hidden');
-                addMessageToUI('system', 'Starting new chat...');
-
-                try {
-                    // Explicitly set session_data to null to force a new session
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_input: null,
-                            session_data: null  // Always null to ensure a new session
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Server responded with ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    // Set new session data, replacing any existing data
-                    sessionData = data.session_data;
-
-                    // Save to local storage
-                    localStorage.setItem('nomosSessionData', JSON.stringify(sessionData));
-
-                    // Extract message directly from the input field
-                    if (data.response && data.response.response) {
-                        const message = data.response.response;
-
-                        // Force a small delay to ensure the UI updates properly
-                        setTimeout(() => {
-                            addMessageToUI('assistant', message);
-                            // Explicitly scroll to the bottom with multiple attempts
-                            setTimeout(() => {
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                            }, 100);
-                            setTimeout(() => {
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                            }, 300);
-                        }, 100);
-                    } else {
-                        // Fall back to previous extraction logic
-                        let initialMessage = null;
-                        if (data.response) {
-                            if (data.response.message) {
-                                initialMessage = data.response.message;
-                            } else if (typeof data.response === 'string') {
-                                initialMessage = data.response;
-                            }
-                        }
-
-                        // If we found a message, display it
-                        if (initialMessage) {
-                            addMessageToUI('assistant', initialMessage);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error creating session:', error);
-                    addMessageToUI('system', 'Error: Failed to start a new chat. Please try again.');
-                } finally {
-                    typingIndicator.classList.add('hidden');
-                    isProcessingRequest = false;
-                }
-            }
-
-            // Function to send a message to the server
-            async function sendMessage(message) {
-                // Prevent sending multiple messages while one is being processed
-                if (isProcessingRequest) {
-                    return;
-                }
-
-                isProcessingRequest = true;
-
-                try {
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_input: message,
-                            session_data: sessionData
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Server responded with ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    sessionData = data.session_data;
-
-                    // Save to local storage
-                    localStorage.setItem('nomosSessionData', JSON.stringify(sessionData));
-
-                    // Extract reasoning if available
-                    let reasoning = [];
-                    if (data.response && data.response.reasoning) {
-                        reasoning = data.response.reasoning;
-                    }
-
-                    // Extract next step if available
-                    let nextStepId = null;
-                    if (data.response && data.response.next_step_id) {
-                        nextStepId = data.response.next_step_id;
-                    }
-
-                    // --- NEW: Collect tool calls and outputs from history ---
-                    let toolCalls = [];
-                    let toolOutputs = [];
-                    const history = sessionData.history || [];
-                    let lastUserMessageIndex = -1;
-
-                    // Find the last user message in history
-                    for (let i = history.length - 1; i >= 0; i--) {
-                        if (history[i].role === 'user' && history[i].content === message) {
-                            lastUserMessageIndex = i;
-                            break;
-                        }
-                    }
-
-                    // Collect tool calls and results that came after the user message
-                    if (lastUserMessageIndex >= 0) {
-                        for (let i = lastUserMessageIndex + 1; i < history.length; i++) {
-                            if (history[i].role === 'tool') {
-                                if (history[i].content.startsWith('Tool call:')) {
-                                    toolCalls.push(history[i].content.substring(10).trim());
-                                } else if (history[i].content.startsWith('Tool result:')) {
-                                    toolOutputs.push(history[i].content.substring(12).trim());
-                                }
-                            }
-                        }
-                    }
-                    // --------------------------------------------------------
-
-                    // Extract message directly from the input field
-                    if (data.response && data.response.response) {
-                        addMessageToUI('assistant', data.response.response, {
-                            reasoning,
-                            nextStepId,
-                            toolCalls,
-                            toolOutputs,
-                            suggestions: (data.response.suggestions && Array.isArray(data.response.suggestions)) ? data.response.suggestions : []
+                const data = await response.json();
+                
+                if (data.session_id) {
+                    // Create a new session with the server session ID as the name
+                    const sessionId = 'session_' + Date.now();
+                    const sessionName = data.session_id;
+                    
+                    sessions[sessionId] = {
+                        name: sessionName,
+                        id: sessionId,
+                        serverSessionId: data.session_id,
+                        messages: []
+                    };
+                    
+                    currentSessionId = sessionId;
+                    saveSessionsToStorage();
+                    renderSessionsList();
+                    clearMessages();
+                    
+                    showMessage('system', 'New chat session started successfully!');
+                    
+                    // Show agent's initial message if initiated
+                    if (shouldInitiate && data.message && data.message.response) {
+                        const assistantMessage = data.message.response;
+                        showMessage('assistant', assistantMessage);
+                        
+                        // Save to local session
+                        sessions[currentSessionId].messages.push({
+                            role: 'assistant',
+                            content: assistantMessage
                         });
-                    } else {
-                        // Fall back to previous extraction logic
-                        let assistantMessage = null;
-                        if (data.response) {
-                            if (data.response.message) {
-                                assistantMessage = data.response.message;
-                            } else if (typeof data.response === 'string') {
-                                assistantMessage = data.response;
-                            }
-                        }
-
-                        // If we found a message, display it
-                        if (assistantMessage) {
-                            addMessageToUI('assistant', assistantMessage, {
-                                reasoning,
-                                nextStepId,
-                                toolCalls,
-                                toolOutputs
-                            });
-                        } else {
-                            addMessageToUI('system', 'Received response with unexpected structure');
-                        }
+                        saveSessionsToStorage();
                     }
-                } catch (error) {
-                    throw error;
-                } finally {
-                    isProcessingRequest = false;
+                    
+                    // Enable message input
+                    messageInput.disabled = false;
+                    sendBtn.disabled = false;
+                    messageInput.focus();
                 }
+
+            } catch (error) {
+                console.error('Failed to start new chat:', error);
+                showMessage('system', `Failed to start new chat: ${error.message}`);
+            } finally {
+                isProcessing = false;
+                newChatBtn.classList.remove('is-loading');
+            }
+        }
+
+        // Send message
+        async function sendMessage(message) {
+            if ((authType !== 'none' && !authToken) || !currentSessionId || isProcessing) {
+                return;
+            }
+            
+            const session = sessions[currentSessionId];
+            if (!session || !session.serverSessionId) {
+                showMessage('system', 'No active server session. Please start a new chat first.');
+                return;
             }
 
-            // Function to render chat history from session data
-            function renderChatHistory(sessionData) {
+            isProcessing = true;
+            
+            // Show user message
+            showMessage('user', message);
+            
+            // Save user message to local session
+            if (!session.messages) {
+                session.messages = [];
+            }
+            session.messages.push({
+                role: 'user',
+                content: message
+            });
+            saveSessionsToStorage();
+            
+            // Show typing indicator
+            typingIndicator.classList.remove('hidden');
+            messagesContent.appendChild(typingIndicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Only add Authorization header if not in no-auth mode
+                if (authType !== 'none') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
+                const response = await fetch(`/session/${session.serverSessionId}/message`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ content: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Hide typing indicator
+                typingIndicator.classList.add('hidden');
+                
+                // Show assistant response
+                if (data.message && data.message.response) {
+                    const assistantMessage = data.message.response;
+                    showMessage('assistant', assistantMessage);
+                    
+                    // Save assistant message to local session
+                    session.messages.push({
+                        role: 'assistant',
+                        content: assistantMessage
+                    });
+                    saveSessionsToStorage();
+                }
+
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                typingIndicator.classList.add('hidden');
+                showMessage('system', `Error: ${error.message}`);
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        // Clear all sessions
+        async function clearAllSessions() {
+            if (!Object.keys(sessions).length) {
+                showMessage('system', 'No sessions to delete.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete ALL sessions? This action cannot be undone.')) {
+                const clearBtn = document.getElementById('clear-all-btn');
+                const originalContent = clearBtn.innerHTML;
+                clearBtn.classList.add('is-loading');
+                clearBtn.disabled = true;
+                
                 try {
-                    if (!sessionData || !sessionData.history) {
-                        return;
-                    }
-
-                    // Clear messages container
-                    messagesContainer.innerHTML = '';
-
-                    // Create a map to track steps
-                    const stepMap = new Map();
-
-                    // First pass: collect step ids
-                    sessionData.history.forEach((item, index) => {
-                        if (item.step_id) {
-                            stepMap.set(index, item.step_id);
+                    // Delete all sessions on the server
+                    const deletePromises = Object.values(sessions).map(async (session) => {
+                        if (session.serverSessionId) {
+                            try {
+                                const headers = {};
+                                if (authType !== 'none') {
+                                    headers['Authorization'] = `Bearer ${authToken}`;
+                                }
+                                
+                                await fetch(`/session/${session.serverSessionId}`, {
+                                    method: 'DELETE',
+                                    headers: headers
+                                });
+                            } catch (error) {
+                                console.error(`Failed to delete session ${session.serverSessionId} on server:`, error);
+                                // Continue with local deletion even if server call fails
+                            }
                         }
                     });
-
-                    // Process history items sequentially
-                    for (let i = 0; i < sessionData.history.length; i++) {
-                        const item = sessionData.history[i];
-
-                        // Skip step_id only items as they'll be shown as transitions
-                        if (item.step_id && !item.role && !item.content) {
-                            continue;
-                        }
-
-                        // Handle regular messages
-                        if (item.role && item.content) {
-                            if (item.role === 'user') {
-                                addMessageToUI('user', item.content);
-                            } else if (['assistant', 'system', 'financial_advisor'].includes(item.role)) {
-                                // Check if the next item is a step id
-                                const nextStepId = stepMap.get(i + 1);
-                                addMessageToUI('assistant', item.content, { nextStepId });
-                            } else if (item.role === 'tool') {
-                                // Check if it's a tool call or result
-                                if (item.content.startsWith('Tool call:')) {
-                                    addMessageToUI('tool_call', item.content.substring(10).trim());
-                                } else if (item.content.startsWith('Tool result:')) {
-                                    addMessageToUI('tool', item.content.substring(12).trim());
-                                } else {
-                                    addMessageToUI('tool', item.content);
-                                }
-                            }
-                        }
-                    }
-
-                    // Scroll to bottom after rendering all history
-                    setTimeout(() => {
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }, 200);
-                } catch (e) {
-                    console.error('Error rendering chat history:', e);
+                    
+                    // Wait for all server deletions to complete (or fail)
+                    await Promise.all(deletePromises);
+                    
+                    // Clear all local session data
+                    sessions = {};
+                    currentSessionId = null;
+                    localStorage.removeItem('nomosSessions');
+                    localStorage.removeItem('nomosCurrentSessionId');
+                    
+                    // Update UI
+                    renderSessionsList();
+                    clearMessages();
+                    showMessage('system', 'All sessions have been deleted. Create a new session to start chatting.');
+                    
+                    // Disable message input
+                    messageInput.disabled = true;
+                    sendBtn.disabled = true;
+                    
+                } catch (error) {
+                    console.error('Error clearing all sessions:', error);
+                    showMessage('system', 'Some sessions may not have been deleted from the server, but local data has been cleared.');
+                } finally {
+                    clearBtn.classList.remove('is-loading');
+                    clearBtn.disabled = false;
+                    clearBtn.innerHTML = originalContent;
                 }
             }
+        }
 
-            // Dark mode logic
-            function setDarkMode(enabled) {
-                if (enabled) {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('nomosDarkMode', '1');
-                    darkModeToggle.innerHTML = `
-                        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
-                        </svg>
-                    `;
-                    darkModeToggle.title = 'Switch to light mode';
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('nomosDarkMode', '0');
-                    darkModeToggle.innerHTML = `
-                        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                        </svg>
-                    `;
-                    darkModeToggle.title = 'Switch to dark mode';
-                }
+        // Form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+            
+            messageInput.value = '';
+            sendMessage(message);
+        });
+
+        // Auto-resize and keyboard shortcuts
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                messageForm.dispatchEvent(new Event('submit'));
             }
-
-            // On load, set mode from localStorage or system preference
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const savedDark = localStorage.getItem('nomosDarkMode');
-            if (savedDark === '1' || (savedDark === null && prefersDark)) {
-                setDarkMode(true);
-            } else {
-                setDarkMode(false);
-            }
-
-            darkModeToggle.addEventListener('click', () => {
-                setDarkMode(!document.documentElement.classList.contains('dark'));
-            });
         });
     </script>
 </body>
