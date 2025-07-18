@@ -1,6 +1,6 @@
 {
   "name": "nomos-sdk",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "TypeScript/JavaScript SDK for interacting with Nomos agents",
   "type": "module",
   "main": "./dist/index.js",
