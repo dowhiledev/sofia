@@ -69,9 +69,9 @@ describe('NomosClient', () => {
   describe('Authentication', () => {
     it('initializes with auth config object', () => {
       const authConfig: AuthConfig = { type: 'jwt', token: 'test-token' };
-      const authClient = new NomosClient({ 
-        baseUrl: base, 
-        auth: authConfig 
+      const authClient = new NomosClient({
+        baseUrl: base,
+        auth: authConfig
       });
       expect(authClient).toBeDefined();
     });
@@ -79,13 +79,13 @@ describe('NomosClient', () => {
     it('sends Authorization header with JWT auth', async () => {
       const authConfig: AuthConfig = { type: 'jwt', token: 'test-jwt-token' };
       client.setAuth(authConfig);
-      
+
       const resp: SessionResponse = { session_id: '1', message: { ok: true } };
       nock(base)
         .post('/session')
         .matchHeader('Authorization', 'Bearer test-jwt-token')
         .reply(200, resp);
-      
+
       const result = await client.createSession();
       expect(result).toEqual(resp);
     });
@@ -93,34 +93,34 @@ describe('NomosClient', () => {
     it('sends Authorization header with API key auth', async () => {
       const authConfig: AuthConfig = { type: 'api_key', token: 'test-api-key' };
       client.setAuth(authConfig);
-      
+
       const resp: SessionResponse = { session_id: '1', message: { ok: true } };
       nock(base)
         .post('/session')
         .matchHeader('Authorization', 'Bearer test-api-key')
         .reply(200, resp);
-      
+
       const result = await client.createSession();
       expect(result).toEqual(resp);
     });
 
     it('throws NomosAuthError on 401 response', async () => {
       const scope = nock(base).post('/session').reply(401, { detail: 'Authentication required' });
-      
+
       await expect(client.createSession()).rejects.toThrow(NomosAuthError);
       expect(scope.isDone()).toBe(true);
     });
 
     it('throws NomosAuthError on 403 response', async () => {
       const scope = nock(base).post('/session').reply(403, { detail: 'Access forbidden' });
-      
+
       await expect(client.createSession()).rejects.toThrow(NomosAuthError);
       expect(scope.isDone()).toBe(true);
     });
 
     it('throws NomosAuthError on 429 response', async () => {
       const scope = nock(base).post('/session').reply(429, { detail: 'Rate limit exceeded' });
-      
+
       await expect(client.createSession()).rejects.toThrow(NomosAuthError);
       expect(scope.isDone()).toBe(true);
     });
@@ -129,13 +129,13 @@ describe('NomosClient', () => {
       const authConfig: AuthConfig = { type: 'jwt', token: 'test-token' };
       client.setAuth(authConfig);
       client.clearAuth();
-      
+
       const resp: SessionResponse = { session_id: '1', message: { ok: true } };
       nock(base)
         .post('/session')
         .matchHeader('Authorization', (val) => val === undefined)
         .reply(200, resp);
-      
+
       const result = await client.createSession();
       expect(result).toEqual(resp);
     });
@@ -145,7 +145,7 @@ describe('NomosClient', () => {
       nock(base)
         .post('/auth/token', { user_id: 'test' } as unknown as DataMatcherMap)
         .reply(200, tokenResp);
-      
+
       const result = await client.generateToken({ user_id: 'test' });
       expect(result).toEqual(tokenResp);
     });
@@ -162,7 +162,7 @@ describe('NomosClient', () => {
       nock(base)
         .post('/chat?verbose=true', req as unknown as DataMatcherMap)
         .reply(200, resp);
-      
+
       const result = await client.chat(req, true);
       expect(result).toEqual(resp);
     });

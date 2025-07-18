@@ -102,11 +102,11 @@ export class NomosClient {
    */
   private getAuthHeaders(): Record<string, string> {
     const headers: Record<string, string> = {};
-    
+
     if (this.auth) {
       headers['Authorization'] = `Bearer ${this.auth.token}`;
     }
-    
+
     return headers;
   }
 

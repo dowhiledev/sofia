@@ -6,7 +6,7 @@ icon: "javascript"
 
 # Nomos TypeScript SDK
 
-The Nomos TypeScript SDK provides a fully typed, promise-based client library for connecting to hosted Nomos agents. It works in both Node.js and browser environments with comprehensive authentication support.
+The Nomos TypeScript SDK provides a fully typed, promise-based client library for connecting to Nomos agents. It works in both Node.js and browser environments with comprehensive authentication support.
 
 ## Installation
 
@@ -29,28 +29,29 @@ pnpm add nomos-sdk
 Here's a simple example to get you started:
 
 ```typescript
-import { NomosClient, AuthConfig } from 'nomos-sdk';
+import { NomosClient } from 'nomos-sdk';
 
 async function main() {
-  // Create client with JWT authentication
-  const auth: AuthConfig = {
-    authType: 'jwt',
-    token: 'your-jwt-token'
-  };
-
-  const client = new NomosClient('http://localhost:8000', { auth });
+  // Create client (no authentication required if server allows)
+  const client = new NomosClient('http://localhost:8000');
 
   try {
     // Check server health
     const health = await client.healthCheck();
     console.log(`Server status: ${health.status}`);
 
-    // Simple stateless chat
-    const response = await client.chat.next('Hello! How can you help me?');
-    console.log(`Agent: ${response.response}`);
-  } finally {
-    // Clean up resources
-    client.close();
+    // Start a session-based conversation
+    const session = await client.createSession(true);
+    console.log(`Agent: ${JSON.stringify(session.message)}`);
+
+    // Send a message
+    const response = await client.sendMessage(session.session_id, 'Hello!');
+    console.log(`Agent: ${JSON.stringify(response.message)}`);
+
+    // End the session
+    await client.endSession(session.session_id);
+  } catch (error) {
+    console.error('Error:', error.message);
   }
 }
 
@@ -63,6 +64,8 @@ The SDK supports multiple authentication methods:
 
 ### No Authentication
 
+If your Nomos server doesn't require authentication:
+
 ```typescript
 const client = new NomosClient('http://localhost:8000');
 ```
@@ -70,75 +73,135 @@ const client = new NomosClient('http://localhost:8000');
 ### JWT Authentication
 
 ```typescript
-const auth: AuthConfig = {
-  authType: 'jwt',
-  token: 'your-jwt-token'
-};
-const client = new NomosClient('http://localhost:8000', { auth });
+const client = new NomosClient({
+  baseUrl: 'http://localhost:8000',
+  auth: {
+    type: 'jwt',
+    token: 'your-jwt-token'
+  }
+});
 ```
 
 ### API Key Authentication
 
 ```typescript
-const auth: AuthConfig = {
-  authType: 'api_key',
-  token: 'your-api-key'
-};
-const client = new NomosClient('http://localhost:8000', { auth });
+const client = new NomosClient({
+  baseUrl: 'http://localhost:8000',
+  auth: {
+    type: 'api_key',
+    token: 'your-api-key'
+  }
+});
+```
+
+### Dynamic Authentication
+
+You can also set authentication after creating the client:
+
+```typescript
+const client = new NomosClient('http://localhost:8000');
+
+// Set authentication
+client.setAuth({
+  type: 'jwt',
+  token: 'your-token'
+});
+
+// Clear authentication
+client.clearAuth();
 ```
 
 ## Usage Patterns
+
+### Session-based Conversations
+
+Session-based conversations allow the server to maintain conversation state:
+
+```typescript
+const client = new NomosClient('http://localhost:8000');
+
+// Create a new session with initial message
+const session = await client.createSession(true);
+console.log(`Session ID: ${session.session_id}`);
+console.log(`Agent: ${JSON.stringify(session.message)}`);
+
+// Continue the conversation
+const response1 = await client.sendMessage(session.session_id, 'Hello!');
+console.log(`Agent: ${JSON.stringify(response1.message)}`);
+
+const response2 = await client.sendMessage(session.session_id, 'How can you help me?');
+console.log(`Agent: ${JSON.stringify(response2.message)}`);
+
+// Get conversation history
+const history = await client.getSessionHistory(session.session_id);
+console.log(`History: ${history.history.length} messages`);
+
+// End the session
+await client.endSession(session.session_id);
+```
 
 ### Stateless Chat
 
 Stateless chat allows you to maintain conversation state on the client side:
 
 ```typescript
-const client = new NomosClient('http://localhost:8000', { auth });
+const client = new NomosClient('http://localhost:8000');
 
-try {
-  // Start a conversation
-  let response = await client.chat.next('Hello!');
-  let sessionData = response.sessionData;
+// Start with an empty session
+let response = await client.chat({ user_input: 'Hello!' });
+let sessionData = response.session_data;
 
-  // Continue the conversation
-  response = await client.chat.next(
-    'Tell me more about your capabilities',
-    sessionData
-  );
-  sessionData = response.sessionData; // Update state
+console.log(`Agent: ${JSON.stringify(response.response)}`);
 
-  console.log(`Agent: ${response.response}`);
-  console.log(`Session ID: ${sessionData.sessionId}`);
-} finally {
-  client.close();
+// Continue conversation by passing session data
+response = await client.chat({
+  user_input: 'Tell me more about your capabilities',
+  session_data: sessionData
+});
+
+// Update session data for next message
+sessionData = response.session_data;
+console.log(`Agent: ${JSON.stringify(response.response)}`);
+
+// Check for tool output (debugging)
+if (response.tool_output) {
+  console.log(`Tool output: ${response.tool_output}`);
 }
 ```
 
-### Session Management
-
-Session management allows the server to handle conversation state:
+### With Authentication
 
 ```typescript
-const client = new NomosClient('http://localhost:8000', { auth });
+import { NomosClient, NomosAuthError } from 'nomos-sdk';
+
+const client = new NomosClient({
+  baseUrl: 'https://your-nomos-server.com',
+  auth: {
+    type: 'jwt',
+    token: process.env.NOMOS_JWT_TOKEN
+  }
+});
 
 try {
-  // Create a new session
-  const session = await client.session.init(true);
-  console.log(`Session created: ${session.sessionId}`);
-
-  // Send messages to the session
-  const response = await client.session.next(session.sessionId, 'Hello!');
-  console.log(`Agent: ${response.message}`);
-
-  // Get conversation history
-  const history = await client.session.getHistory(session.sessionId);
-  console.log(`History: ${history.history.length} messages`);
-
-  // End the session
-  await client.session.end(session.sessionId);
-} finally {
-  client.close();
+  const session = await client.createSession(true);
+  const response = await client.sendMessage(session.session_id, 'Hello!');
+  await client.endSession(session.session_id);
+} catch (error) {
+  if (error instanceof NomosAuthError) {
+    switch (error.status) {
+      case 401:
+        console.error('Authentication failed - check your token');
+        break;
+      case 403:
+        console.error('Access forbidden - insufficient permissions');
+        break;
+      case 429:
+        console.error('Rate limit exceeded - slow down requests');
+        break;
+    }
+  } else {
+    console.error('Other error:', error.message);
+  }
 }
 ```
 
@@ -151,21 +214,24 @@ Main client class for interacting with Nomos agents.
 #### Constructor
 
 ```typescript
-new NomosClient(
-  baseUrl: string,
-  options?: {
-    auth?: AuthConfig;
-    timeout?: number;
-    headers?: Record<string, string>;
-  }
-)
+new NomosClient(config?: string | NomosClientConfig)
 ```
 
 **Parameters:**
-- `baseUrl`: URL of the Nomos API server
-- `options.auth`: Authentication configuration
-- `options.timeout`: Request timeout in milliseconds (default: 30000)
-- `options.headers`: Additional headers for requests
+- `config`: Base URL string or configuration object
+
+**Configuration Object:**
+```typescript
+interface NomosClientConfig {
+  baseUrl?: string;
+  auth?: AuthConfig;
+}
+
+interface AuthConfig {
+  type: 'jwt' | 'api_key';
+  token: string;
+}
+```
 
 #### Methods
 
@@ -178,77 +244,87 @@ const health = await client.healthCheck();
 // Returns: { status: "healthy", timestamp: 1234567890 }
 ```
 
-##### `chat.next(query, sessionData?)`
-
-Send a chat message with optional session data for stateless chat.
-
-```typescript
-const response = await client.chat.next('Hello!', sessionData);
-// Returns: ChatResponse object
-```
-
-##### `session.init(initiate?)`
+##### `createSession(initiate?: boolean)`
 
 Create a new session.
 
 ```typescript
-const session = await client.session.init(true);
-// Returns: SessionResponse object
+const session = await client.createSession(true);
+// Returns: { session_id: string, message: Record<string, unknown> }
 ```
 
-##### `session.next(sessionId, query)`
+##### `sendMessage(sessionId: string, message: string)`
 
 Send a message to an existing session.
 
 ```typescript
-const response = await client.session.next(sessionId, 'Hello!');
-// Returns: SessionResponse object
+const response = await client.sendMessage(sessionId, 'Hello!');
+// Returns: { session_id: string, message: Record<string, unknown> }
 ```
 
-##### `session.getHistory(sessionId)`
+##### `getSessionHistory(sessionId: string)`
 
 Get conversation history for a session.
 
 ```typescript
-const history = await client.session.getHistory(sessionId);
-// Returns: { sessionId: string, history: any[] }
+const history = await client.getSessionHistory(sessionId);
+// Returns: { session_id: string, history: Array<Message | Summary | StepIdentifier> }
 ```
 
-##### `session.end(sessionId)`
+##### `endSession(sessionId: string)`
 
 End a session.
 
 ```typescript
-await client.session.end(sessionId);
+await client.endSession(sessionId);
 // Returns: { message: string }
 ```
 
-##### `close()`
+##### `chat(request: ChatRequest, verbose?: boolean)`
 
-Clean up client resources.
+Send a chat message with optional session data for stateless chat.
 
 ```typescript
-client.close();
+const response = await client.chat({
+  user_input: 'Hello!',
+  session_data: sessionData
+}, true); // verbose = true for debugging
+// Returns: ChatResponse object
+```
+
+##### `setAuth(auth: AuthConfig)`
+
+Set authentication configuration.
+
+```typescript
+client.setAuth({ type: 'jwt', token: 'your-token' });
+```
+
+##### `clearAuth()`
+
+Clear authentication configuration.
+
+```typescript
+client.clearAuth();
+```
+
+##### `generateToken(payload: Record<string, unknown>)`
+
+Generate a JWT token (development only).
+
+```typescript
+const tokenResponse = await client.generateToken({ user_id: 'test' });
+// Returns: { access_token: string, token_type: string }
 ```
 
 ### Type Definitions
 
-#### AuthConfig
+#### Message
 
 ```typescript
-interface AuthConfig {
-  authType: 'none' | 'jwt' | 'api_key';
-  token?: string;
-}
-```
-
-#### ChatResponse
-
-```typescript
-interface ChatResponse {
-  response: any; // Agent's response
-  toolOutput?: string; // Tool execution output
-  sessionData: State; // Updated session state
+interface Message {
+  role: string;
+  content: string;
 }
 ```
 
@@ -256,19 +332,46 @@ interface ChatResponse {
 
 ```typescript
 interface SessionResponse {
-  sessionId: string; // Session identifier
-  message: any; // Agent's message
+  session_id: string;
+  message: Record<string, unknown>;
 }
 ```
 
-#### State
+#### SessionData
 
 ```typescript
-interface State {
-  sessionId: string;
-  currentStepId: string;
-  history: any[];
-  flowState?: any;
+interface SessionData {
+  session_id: string;
+  current_step_id: string;
+  history: Array<Message | Summary | StepIdentifier>;
+  flow_state?: FlowState;
+}
+```
+
+#### ChatRequest
+
+```typescript
+interface ChatRequest {
+  user_input?: string;
+  session_data?: SessionData;
+}
+```
+
+#### ChatResponse
+
+```typescript
+interface ChatResponse {
+  response: Record<string, unknown>;
+  tool_output?: string | null;
+  session_data: SessionData;
+}
+```
+
+#### NomosAuthError
+
+```typescript
+class NomosAuthError extends Error {
+  constructor(message: string, public status?: number);
 }
 ```
 
@@ -277,113 +380,203 @@ interface State {
 The SDK provides specific error types for different scenarios:
 
 ```typescript
-import {
-  NomosClientError,
-  AuthenticationError,
-  APIError
-} from 'nomos-sdk';
+import { NomosClient, NomosAuthError } from 'nomos-sdk';
+
+const client = new NomosClient({
+  baseUrl: 'https://your-nomos-server.com',
+  auth: { type: 'jwt', token: 'your-token' }
+});
 
 try {
-  const response = await client.chat.next('Hello!');
+  const response = await client.createSession();
 } catch (error) {
-  if (error instanceof AuthenticationError) {
-    console.error('Authentication failed:', error.message);
-  } else if (error instanceof APIError) {
-    console.error(`API error: ${error.message} (Status: ${error.statusCode})`);
-  } else if (error instanceof NomosClientError) {
-    console.error('Client error:', error.message);
+  if (error instanceof NomosAuthError) {
+    switch (error.status) {
+      case 401:
+        console.error('Authentication failed - check your token');
+        break;
+      case 403:
+        console.error('Access forbidden - insufficient permissions');
+        break;
+      case 429:
+        console.error('Rate limit exceeded - slow down requests');
+        break;
+      default:
+        console.error(`Auth error: ${error.message}`);
+    }
   } else {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error:', error.message);
   }
 }
 ```
 
-## Advanced Usage
+## Environment Variables
 
-### Custom Headers
+For security, use environment variables for sensitive tokens:
+
+```bash
+# .env file
+NOMOS_API_URL=https://your-nomos-server.com
+NOMOS_JWT_TOKEN=your-jwt-token
+NOMOS_API_KEY=your-api-key
+```
 
 ```typescript
-const client = new NomosClient('http://localhost:8000', {
-  auth,
-  headers: {
-    'X-Client-Version': '1.0.0',
-    'X-User-Agent': 'MyApp/1.0'
+const client = new NomosClient({
+  baseUrl: process.env.NOMOS_API_URL,
+  auth: {
+    type: 'jwt',
+    token: process.env.NOMOS_JWT_TOKEN
   }
 });
-```
-
-### Timeout Configuration
-
-```typescript
-const client = new NomosClient('http://localhost:8000', {
-  timeout: 60000 // 60 seconds
-});
-```
-
-### Browser Usage
-
-The SDK works in browser environments with proper CORS configuration:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <script type="module">
-    import { NomosClient } from 'https://cdn.skypack.dev/nomos-sdk';
-
-    const client = new NomosClient('http://localhost:8000');
-
-    const response = await client.chat.next('Hello from browser!');
-    console.log(response);
-  </script>
-</head>
-</html>
 ```
 
 ## Examples
 
-### React Chat Component
+### Basic Session Example
+
+```typescript
+import { NomosClient } from 'nomos-sdk';
+
+async function basicExample() {
+  const client = new NomosClient('http://localhost:8000');
+
+  try {
+    // Create and start a session
+    const session = await client.createSession(true);
+    console.log(`Session created: ${session.session_id}`);
+    console.log(`Agent says: ${JSON.stringify(session.message)}`);
+
+    // Send messages
+    const response1 = await client.sendMessage(session.session_id, 'Hello!');
+    console.log(`Agent: ${JSON.stringify(response1.message)}`);
+
+    const response2 = await client.sendMessage(session.session_id, 'How can you help me?');
+    console.log(`Agent: ${JSON.stringify(response2.message)}`);
+
+    // Get history
+    const history = await client.getSessionHistory(session.session_id);
+    console.log(`Conversation has ${history.history.length} messages`);
+
+    // End session
+    await client.endSession(session.session_id);
+    console.log('Session ended');
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}
+
+basicExample();
+```
+
+### Stateless Chat Example
+
+```typescript
+import { NomosClient } from 'nomos-sdk';
+
+async function chatExample() {
+  const client = new NomosClient('http://localhost:8000');
+
+  try {
+    // Start conversation
+    let response = await client.chat({ user_input: 'Hello!' });
+    let sessionData = response.session_data;
+    console.log(`Agent: ${JSON.stringify(response.response)}`);
+
+    // Continue conversation
+    response = await client.chat({
+      user_input: 'What can you do?',
+      session_data: sessionData
+    });
+    sessionData = response.session_data;
+    console.log(`Agent: ${JSON.stringify(response.response)}`);
+
+    // Use verbose mode for debugging
+    response = await client.chat({
+      user_input: 'Tell me more',
+      session_data: sessionData
+    }, true); // verbose = true
+
+    if (response.tool_output) {
+      console.log(`Tool output: ${response.tool_output}`);
+    }
+  } catch (error) {
+    console.error('Chat error:', error.message);
+  }
+}
+
+chatExample();
+```
+
+### Authenticated Example
+
+```typescript
+import { NomosClient, NomosAuthError } from 'nomos-sdk';
+
+async function authenticatedExample() {
+  const client = new NomosClient({
+    baseUrl: 'https://your-nomos-server.com',
+    auth: {
+      type: 'jwt',
+      token: process.env.NOMOS_JWT_TOKEN
+    }
+  });
+
+  try {
+    // Check server health first
+    const health = await client.healthCheck();
+    console.log(`Server status: ${health.status}`);
+
+    // Use the client normally
+    const session = await client.createSession(true);
+    const response = await client.sendMessage(session.session_id, 'Hello!');
+    await client.endSession(session.session_id);
+  } catch (error) {
+    if (error instanceof NomosAuthError) {
+      console.error(`Auth error (${error.status}): ${error.message}`);
+    } else {
+      console.error('Error:', error.message);
+    }
+  }
+}
+
+authenticatedExample();
+```
+
+### React Component Example
 
 ```typescript
 import React, { useState, useCallback } from 'react';
-import { NomosClient, AuthConfig, State } from 'nomos-sdk';
-
-interface ChatMessage {
-  role: 'user' | 'agent';
-  content: string;
-}
+import { NomosClient, SessionData } from 'nomos-sdk';
 
 const ChatComponent: React.FC = () => {
-  const [client] = useState(() => {
-    const auth: AuthConfig = {
-      authType: 'jwt',
-      token: process.env.REACT_APP_NOMOS_TOKEN!
-    };
-    return new NomosClient('http://localhost:8000', { auth });
-  });
-
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sessionData, setSessionData] = useState<State | null>(null);
+  const [client] = useState(() => new NomosClient('http://localhost:8000'));
+  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || loading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: input };
+    const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
     try {
-      const response = await client.chat.next(input, sessionData);
-      const agentMessage: ChatMessage = {
+      const response = await client.chat({
+        user_input: input,
+        session_data: sessionData
+      });
+
+      const agentMessage = {
         role: 'agent',
-        content: response.response
+        content: JSON.stringify(response.response)
       };
 
       setMessages(prev => [...prev, agentMessage]);
-      setSessionData(response.sessionData);
+      setSessionData(response.session_data);
     } catch (error) {
       console.error('Chat error:', error);
     } finally {
@@ -424,16 +617,17 @@ export default ChatComponent;
 ### Node.js CLI Tool
 
 ```typescript
-import { NomosClient, AuthConfig } from 'nomos-sdk';
+import { NomosClient } from 'nomos-sdk';
 import * as readline from 'readline';
 
 async function createCLITool() {
-  const auth: AuthConfig = {
-    authType: 'api_key',
-    token: process.env.NOMOS_API_KEY!
-  };
-
-  const client = new NomosClient('http://localhost:8000', { auth });
+  const client = new NomosClient({
+    baseUrl: 'http://localhost:8000',
+    auth: {
+      type: 'api_key',
+      token: process.env.NOMOS_API_KEY!
+    }
+  });
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -443,33 +637,36 @@ async function createCLITool() {
   console.log('🤖 Nomos CLI Chat Tool');
   console.log('Type "quit" to exit\n');
 
-  // Start conversation
-  let response = await client.chat.next('Hello!');
-  let sessionData = response.sessionData;
-  console.log(`Agent: ${response.response}\n`);
+  try {
+    // Start session
+    const session = await client.createSession(true);
+    console.log(`Agent: ${JSON.stringify(session.message)}\n`);
 
-  const askQuestion = () => {
-    rl.question('You: ', async (input) => {
-      if (input.toLowerCase() === 'quit') {
-        console.log('Goodbye!');
-        rl.close();
-        client.close();
-        return;
-      }
+    const askQuestion = () => {
+      rl.question('You: ', async (input) => {
+        if (input.toLowerCase() === 'quit') {
+          await client.endSession(session.session_id);
+          console.log('Goodbye!');
+          rl.close();
+          return;
+        }
 
-      try {
-        response = await client.chat.next(input, sessionData);
-        sessionData = response.sessionData;
-        console.log(`Agent: ${response.response}\n`);
-      } catch (error) {
-        console.error('Error:', error);
-      }
+        try {
+          const response = await client.sendMessage(session.session_id, input);
+          console.log(`Agent: ${JSON.stringify(response.message)}\n`);
+        } catch (error) {
+          console.error('Error:', error.message);
+        }
 
-      askQuestion();
-    });
-  };
+        askQuestion();
+      });
+    };
 
-  askQuestion();
+    askQuestion();
+  } catch (error) {
+    console.error('Failed to start:', error.message);
+    rl.close();
+  }
 }
 
 createCLITool().catch(console.error);
@@ -479,17 +676,18 @@ createCLITool().catch(console.error);
 
 ```typescript
 import express from 'express';
-import { NomosClient, AuthConfig } from 'nomos-sdk';
+import { NomosClient, NomosAuthError } from 'nomos-sdk';
 
 const app = express();
 app.use(express.json());
 
-const auth: AuthConfig = {
-  authType: 'jwt',
-  token: process.env.NOMOS_JWT_TOKEN!
-};
-
-const client = new NomosClient('http://localhost:8000', { auth });
+const client = new NomosClient({
+  baseUrl: 'http://localhost:8000',
+  auth: {
+    type: 'jwt',
+    token: process.env.NOMOS_JWT_TOKEN!
+  }
+});
 
 // Session-based chat endpoint
 app.post('/api/chat/:sessionId', async (req, res) => {
@@ -497,22 +695,35 @@ app.post('/api/chat/:sessionId', async (req, res) => {
     const { sessionId } = req.params;
     const { message } = req.body;
 
-    const response = await client.session.next(sessionId, message);
+    const response = await client.sendMessage(sessionId, message);
     res.json(response);
   } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: 'Chat failed' });
+    if (error instanceof NomosAuthError) {
+      res.status(error.status || 401).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Chat failed' });
+    }
   }
 });
 
 // Create new session
 app.post('/api/sessions', async (req, res) => {
   try {
-    const session = await client.session.init(true);
+    const session = await client.createSession(true);
     res.json(session);
   } catch (error) {
-    console.error('Session creation error:', error);
     res.status(500).json({ error: 'Session creation failed' });
+  }
+});
+
+// Stateless chat endpoint
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { user_input, session_data } = req.body;
+    const response = await client.chat({ user_input, session_data });
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: 'Chat failed' });
   }
 });
 
@@ -530,134 +741,151 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Shutting down...');
-  client.close();
-  process.exit(0);
-});
 ```
 
 ## Best Practices
 
-1. **Always call `client.close()`** when done to clean up resources
-2. **Handle errors appropriately** for production applications
-3. **Use environment variables** for sensitive tokens
-4. **Implement proper TypeScript types** for better development experience
-5. **Consider connection pooling** for high-throughput applications
-6. **Use stateless chat** for simple interactions, **sessions** for complex conversations
-7. **Implement retry logic** with exponential backoff for production apps
-
-## Framework Integration
-
-### Next.js API Routes
+1. **Handle authentication errors gracefully** with proper error checking
+2. **Use environment variables** for sensitive tokens and API URLs
+3. **End sessions properly** to clean up server resources
+4. **Implement retry logic** with exponential backoff for production apps
+5. **Use stateless chat** for simple interactions, **sessions** for complex conversations
+6. **Check server health** before making requests in production
+7. **Handle rate limiting** by implementing proper backoff strategies
 
 ```typescript
-// pages/api/chat.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { NomosClient, AuthConfig } from 'nomos-sdk';
-
-const auth: AuthConfig = {
-  authType: 'jwt',
-  token: process.env.NOMOS_JWT_TOKEN!
-};
-
-const client = new NomosClient(process.env.NOMOS_API_URL!, { auth });
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+// Example: Retry logic with exponential backoff
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error instanceof NomosAuthError && error.status === 429) {
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+      throw error;
+    }
   }
+  throw new Error('Max retries exceeded');
+}
 
-  try {
-    const { message, sessionData } = req.body;
-    const response = await client.chat.next(message, sessionData);
-    res.json(response);
-  } catch (error) {
-    console.error('Chat error:', error);
-    res.status(500).json({ error: 'Chat failed' });
+// Usage
+const response = await withRetry(() =>
+  client.sendMessage(sessionId, 'Hello!')
+);
+```
+
+## Browser Usage
+
+The SDK works in browser environments with proper CORS configuration:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="module">
+    import { NomosClient } from 'https://cdn.skypack.dev/nomos-sdk';
+
+    const client = new NomosClient('http://localhost:8000');
+
+    // Check if server is available
+    try {
+      const health = await client.healthCheck();
+      console.log('Server is available:', health.status);
+
+      // Use the client
+      const response = await client.chat({ user_input: 'Hello from browser!' });
+      console.log('Agent response:', response);
+    } catch (error) {
+      console.error('Error:', error.message);
+    }
+  </script>
+</head>
+</html>
+```
+
+## TypeScript Configuration
+
+For optimal TypeScript support:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strict": true
   }
 }
 ```
 
-### Vue.js Composition API
+## Migration from v0.1.x
+
+If you're upgrading from version 0.1.x, see our [Migration Guide](https://github.com/dowhiledev/nomos/blob/main/support/ts-sdk/MIGRATION.md) for detailed instructions.
+
+### Quick Migration
+
+Most v0.1.x code will work without changes:
 
 ```typescript
-import { ref, onUnmounted } from 'vue';
-import { NomosClient, AuthConfig, State } from 'nomos-sdk';
+// v0.1.x (still works)
+const client = new NomosClient('http://localhost:8000');
 
-export function useNomosChat() {
-  const client = new NomosClient('http://localhost:8000', {
-    auth: {
-      authType: 'jwt',
-      token: process.env.VUE_APP_NOMOS_TOKEN!
-    }
-  });
-
-  const messages = ref<Array<{ role: string; content: string }>>([]);
-  const sessionData = ref<State | null>(null);
-  const loading = ref(false);
-
-  const sendMessage = async (content: string) => {
-    loading.value = true;
-    messages.value.push({ role: 'user', content });
-
-    try {
-      const response = await client.chat.next(content, sessionData.value);
-      messages.value.push({ role: 'agent', content: response.response });
-      sessionData.value = response.sessionData;
-    } catch (error) {
-      console.error('Chat error:', error);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  onUnmounted(() => {
-    client.close();
-  });
-
-  return {
-    messages,
-    sendMessage,
-    loading
-  };
-}
+// v0.2.x (new features)
+const client = new NomosClient({
+  baseUrl: 'http://localhost:8000',
+  auth: { type: 'jwt', token: 'your-token' }
+});
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
+**Authentication Errors**
+```typescript
+// Check your token and server configuration
+try {
+  await client.createSession();
+} catch (error) {
+  if (error instanceof NomosAuthError && error.status === 401) {
+    console.log('Token may be expired or invalid');
+  }
+}
+```
+
 **Module Resolution (Node.js)**
 ```typescript
-// If you encounter import issues, try:
-const { NomosClient } = require('nomos-sdk');
+// If you encounter import issues:
+const { NomosClient } = require('nomos-sdk'); // CommonJS
 
 // Or with dynamic imports:
-const { NomosClient } = await import('nomos-sdk');
+const { NomosClient } = await import('nomos-sdk'); // ESM
 ```
 
 **CORS Issues (Browser)**
 ```typescript
 // Ensure your Nomos server has proper CORS headers
-// Or use a proxy in development
-const client = new NomosClient('/api/proxy'); // Proxy to avoid CORS
+// Check server configuration for allowed origins
 ```
 
-**TypeScript Configuration**
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
-  }
+**Rate Limiting**
+```typescript
+// Implement proper backoff when hitting rate limits
+if (error instanceof NomosAuthError && error.status === 429) {
+  // Wait before retrying
+  await new Promise(resolve => setTimeout(resolve, 1000));
 }
 ```
 
@@ -668,8 +896,22 @@ We welcome contributions to the Nomos TypeScript SDK! Please see our [contributi
 ## Support
 
 For questions and support:
-- 📖 [Documentation](https://nomos.dowhile.dev)
+- 📖 [Documentation](https://docs.nomos.dev)
 - 💬 [Discord Community](https://discord.gg/dowhiledev)
 - 🐛 [GitHub Issues](https://github.com/dowhiledev/nomos/issues)
 - 📧 [Email Support](mailto:support@dowhile.dev)
 - 📦 [NPM Package](https://www.npmjs.com/package/nomos-sdk)
+
+## Changelog
+
+### v0.2.0 (Latest)
+- ✅ Added JWT and API key authentication support
+- ✅ Enhanced error handling with `NomosAuthError`
+- ✅ Added health check endpoint
+- ✅ Added verbose mode for chat debugging
+- ✅ Added token generation for development
+- ✅ Improved TypeScript types and documentation
+- ✅ Backward compatible with v0.1.x code
+
+### v0.1.0
+- 🚀 Initial release with basic session and chat functionality
