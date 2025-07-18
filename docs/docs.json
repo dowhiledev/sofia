@@ -96,6 +96,20 @@
         ]
       },
       {
+        "dropdown": "Client SDKs",
+        "icon": "code",
+        "description": "Client libraries for different languages",
+        "groups": [
+          {
+            "group": "Available SDKs",
+            "pages": [
+              "sdks/python-sdk",
+              "sdks/typescript-sdk"
+            ]
+          }
+        ]
+      },
+      {
         "dropdown": "Community",
         "icon": "users",
         "description": "Connect with Builders",

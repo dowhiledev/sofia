@@ -4,6 +4,7 @@ Nomos is an open-source, configurable multi-step agent framework for building ad
 Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
 """
 
+from .client import AuthConfig, NomosClient, NomosClientSync
 from .config import AgentConfig, ServerConfig
 from .core import Agent
 from .models.agent import Action, Route, State, Step, StepIdentifier, Summary
@@ -36,4 +37,8 @@ __all__ = [
     "ScenarioRunner",
     "Scenario",
     "StateMachine",
+    # Client classes
+    "NomosClient",
+    "NomosClientSync",
+    "AuthConfig",
 ]
