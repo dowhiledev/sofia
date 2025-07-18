@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """
-Test script for Nomos Client with JWT Authentication
+Test script for the new Nomos Client API with JWT Authentication
 
-This script tests the Nomos client against a JWT-authenticated server.
+This script tests the refactored Nomos client using the new API style:
+- client.chat.next() for stateless chat
+- client.session.init() for session creation
+- client.session.next() for session messages
+- client.session.get_history() for history
+- client.session.end() for ending sessions
 """
 
 import asyncio
 from nomos.client import AuthConfig, NomosClient
 
 
-async def test_jwt_client():
-    """Test the Nomos client with JWT authentication"""
+async def test_new_api():
+    """Test the new Nomos client API style"""
     
     # JWT token provided by user
     jwt_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZGRpdGlvbmFsUHJvcDEiOnt9LCJleHAiOjE3NTI5MjU0OTh9.y-0Pv_O5Ecod9PBCG-Yfm9pBq8wZcc5jLGLN10OY9t4"
@@ -18,11 +23,10 @@ async def test_jwt_client():
     # Configure JWT authentication
     auth = AuthConfig(auth_type="jwt", token=jwt_token)
     
-    print("🚀 Testing Nomos Client with JWT Authentication")
-    print("=" * 60)
+    print("🚀 Testing New Nomos Client API")
+    print("=" * 50)
     print(f"🔗 Server URL: http://localhost:8000")
     print(f"🔐 Auth Type: JWT")
-    print(f"🎫 Token: {jwt_token[:20]}...")
     print()
     
     async with NomosClient("http://localhost:8000", auth=auth) as client:
@@ -35,7 +39,7 @@ async def test_jwt_client():
             print()
             
             # Test 2: Stateless Chat with client.chat.next()
-            print("� Test 2: Stateless Chat (client.chat.next)")
+            print("🔄 Test 2: Stateless Chat (client.chat.next)")
             print("-" * 30)
             
             # First message
@@ -67,16 +71,14 @@ async def test_jwt_client():
             print("Creating new session...")
             session = await client.session.init(initiate=True)
             print(f"✅ Session created: {session.session_id}")
-            
-            if session.message:
-                print(f"🤖 Initial message: {session.message}")
+            print(f"🤖 Initial message: {session.message}")
             print()
             
             # Send messages
             messages = [
-                "What services do you offer?",
-                "How can I get started?",
-                "Thank you for the information!"
+                "What can you help me with?",
+                "Tell me about Dragon Ball characters",
+                "Thanks for the information!"
             ]
             
             for i, message in enumerate(messages, 1):
@@ -97,7 +99,6 @@ async def test_jwt_client():
             print(f"✅ {result.get('message', 'Session ended successfully')}")
             print()
             
-            # Test 4: Remove the stateless chat test as it's covered in Test 2
             print("🎉 All tests completed successfully!")
             
         except Exception as e:
@@ -110,7 +111,7 @@ async def test_jwt_client():
 async def main():
     """Main function"""
     try:
-        await test_jwt_client()
+        await test_new_api()
     except KeyboardInterrupt:
         print("\n👋 Test interrupted by user")
     except Exception as e:

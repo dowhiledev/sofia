@@ -100,10 +100,10 @@ class SessionAPI:
             APIError: If the API request fails
         """
         params = {"initiate": "true"} if initiate else {}
-        data = await self._client._request("POST", "/session", params=params)
+        data = await self._client._request("POST", "/sessions", params=params)
         return SessionResponse(**data)
     
-    async def next(self, session_id: str, query: str) -> SessionResponse:
+    async def next(self, session_id: str, query: str) -> Message:
         """
         Send a message to an existing session.
         
@@ -112,7 +112,7 @@ class SessionAPI:
             query: The user's message/query
             
         Returns:
-            SessionResponse with the agent's response
+            Message with the agent's response
             
         Raises:
             AuthenticationError: If authentication fails
@@ -121,12 +121,12 @@ class SessionAPI:
         request = Message(content=query)
         data = await self._client._request(
             "POST",
-            f"/session/{session_id}/message",
+            f"/sessions/{session_id}/message",
             json_data=request.model_dump(),
         )
-        return SessionResponse(**data)
+        return Message(**data)
     
-    async def get_history(self, session_id: str) -> Dict[str, Any]:
+    async def get_history(self, session_id: str) -> State:
         """
         Get the conversation history for a session.
         
@@ -134,14 +134,14 @@ class SessionAPI:
             session_id: The session ID
             
         Returns:
-            Dictionary containing session_id and history
+            State object containing the session history
             
         Raises:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
         """
-        data = await self._client._request("GET", f"/session/{session_id}/history")
-        return data
+        data = await self._client._request("GET", f"/sessions/{session_id}")
+        return State(**data)
     
     async def end(self, session_id: str) -> Dict[str, Any]:
         """
@@ -157,7 +157,7 @@ class SessionAPI:
             AuthenticationError: If authentication fails
             APIError: If the API request fails
         """
-        return await self._client._request("DELETE", f"/session/{session_id}")
+        return await self._client._request("DELETE", f"/sessions/{session_id}")
 
 
 class NomosClient:
@@ -350,27 +350,27 @@ class SessionAPISync:
     def init(self, initiate: bool = False) -> SessionResponse:
         """Create a new session."""
         params = {"initiate": "true"} if initiate else {}
-        data = self._client._request("POST", "/session", params=params)
+        data = self._client._request("POST", "/sessions", params=params)
         return SessionResponse(**data)
     
-    def next(self, session_id: str, query: str) -> SessionResponse:
+    def next(self, session_id: str, query: str) -> Message:
         """Send a message to an existing session."""
         request = Message(content=query)
         data = self._client._request(
             "POST",
-            f"/session/{session_id}/message",
+            f"/sessions/{session_id}/message",
             json_data=request.model_dump(),
         )
-        return SessionResponse(**data)
+        return Message(**data)
     
-    def get_history(self, session_id: str) -> Dict[str, Any]:
+    def get_history(self, session_id: str) -> State:
         """Get the conversation history for a session."""
-        data = self._client._request("GET", f"/session/{session_id}/history")
-        return data
+        data = self._client._request("GET", f"/sessions/{session_id}")
+        return State(**data)
     
     def end(self, session_id: str) -> Dict[str, Any]:
         """End a session."""
-        return self._client._request("DELETE", f"/session/{session_id}")
+        return self._client._request("DELETE", f"/sessions/{session_id}")
 
 
 class NomosClientSync:
