@@ -45,11 +45,11 @@ class UnitTestCase(BaseModel):
         """Build a session ``State`` from the provided context data."""
         if not self.context:
             return None
-        ctx = State()
-        if "current_step_id" in self.context:
-            ctx.current_step_id = self.context["current_step_id"]
         history = self.context.get("history") or []
-        ctx.history = [HistoryItem(**h).to_obj() for h in history]
+        current_step_id = self.context.get("current_step_id")
+        ctx = State(
+            current_step_id=current_step_id, history=[HistoryItem(**h).to_obj() for h in history]
+        )
         return ctx
 
 

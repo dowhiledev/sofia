@@ -71,9 +71,7 @@ class ScenarioRunner:
             chat_history.append(
                 Message(
                     role="agent",
-                    content=res.decision.model_dump(mode="json").get(
-                        "response", "<No response provided>"
-                    ),
+                    content=str(res.decision.response) if res.decision.response else "No response",
                 )
             )
             session_history.append((datetime.now(), session_data))
