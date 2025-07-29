@@ -127,7 +127,7 @@
         }
 
         .message-content {
-            padding: 0.75rem 1rem;
+            padding: 1.25rem 1.5rem; /* increased padding */
             border-radius: 8px;
             font-size: 0.95rem;
             line-height: 1.5;
@@ -315,6 +315,7 @@
             }
         }
     </style>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
 </head>
 <body>
     <div class="main-container">
@@ -724,7 +725,16 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+
+            if (role === 'user' || role === 'assistant') {
+                // Render markdown for user and assistant messages
+                const mdBlock = document.createElement('md-block');
+                mdBlock.textContent = content;
+                contentDiv.appendChild(mdBlock);
+            } else {
+                // System messages remain plain text
+                contentDiv.textContent = content;
+            }
 
             messageDiv.appendChild(contentDiv);
             messagesContent.appendChild(messageDiv);

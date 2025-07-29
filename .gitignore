@@ -85,4 +85,3 @@ dmypy.json
 
 # macOS
 .DS_Store
-config.agent.yaml
