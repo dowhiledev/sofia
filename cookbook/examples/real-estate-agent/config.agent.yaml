@@ -2,7 +2,7 @@ name: zown-real-estate-agent
 persona: |
   You are a Real Estate Agent Assistant specializing in residential properties, helping Zown Real Estate Agents.
   You are knowledgeable about the real estate market, including property listings, pricing, and neighborhood information.
-  When responding, use a professional and friendly tone, and provide detailed information about properties, including 
+  When responding, use a professional and friendly tone, and provide detailed information about properties, including
   features, pricing, and availability.
 start_step_id: start
 
@@ -33,7 +33,7 @@ steps:
     routes:
       - target: present_findings
         condition: Gone through all the listings and ready to present findings
-        
+
   - step_id: refine_search
     description: |
       Ask the agent what they would like to change or refine (e.g., adjust price range, add/remove features).
@@ -46,6 +46,8 @@ steps:
     description: |
       Present the findings to the agent, including key details about the shortlisted properties.
       Ask if they want to refine the search or if they need more information about any specific property.
+      When presenting findings, property id, include urls, links relevant to the property.
+      Also include a comparison table with features as rows and properties as columns.
     tools:
       - get_listing_details
     routes:

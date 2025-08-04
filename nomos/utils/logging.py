@@ -5,9 +5,9 @@ import sys
 from functools import lru_cache
 from logging import Logger
 
-import colorama
-from colorama import Fore, Style
 from loguru import logger
+from rich.console import Console
+from rich.panel import Panel
 
 from ..models.agent import Action, Response
 
@@ -59,53 +59,53 @@ def log_error(message: str) -> None:
 
 
 def pp_response(response: "Response") -> None:
-    """Print the response from a Nomos session."""
-    colorama.init(autoreset=True)
-
+    """Print the response from a Nomos session using rich panels."""
+    console = Console()
     decision = response.decision
     tool_output = response.tool_output
 
-    print(f"\n{Style.BRIGHT}{Fore.YELLOW}Thoughts:{Style.RESET_ALL}")
-    print("\n".join(decision.reasoning))
+    # Thoughts panel
+    thoughts = "\n".join(decision.reasoning)
+    console.print(Panel(thoughts, title="Thoughts", style="yellow", expand=False))
 
-    # Format output based on action type
+    # Action panels
     if decision.action == Action.RESPOND:
-        print(
-            f"{Style.BRIGHT}{Fore.BLUE}Responding Back:{Style.RESET_ALL}",
-            f"{decision.response}",
+        action_response = (
+            str(decision.response)[:97] + "..."
+            if len(str(decision.response)) > 100
+            else str(decision.response)
         )
+        content = f"[bold blue]Responding Back:[/bold blue] {action_response}"
         if decision.suggestions:
-            print(f"{Style.DIM}Suggestions: {', '.join(decision.suggestions)}{Style.RESET_ALL}")
+            content += f"\n[dim]Suggestions: {', '.join(decision.suggestions)}[/dim]"
+        console.print(Panel(content, style="blue", expand=False))
 
     elif decision.action == Action.TOOL_CALL and decision.tool_call:
-        print(f"{Style.BRIGHT}{Fore.MAGENTA}Running Tool:{Style.RESET_ALL}")
         tool_args = decision.tool_call.tool_kwargs.model_dump_json()
-        # Trim arguments if too long
         if len(tool_args) > 100:
             tool_args = tool_args[:97] + "..."
-        print(f"Tool: {Style.BRIGHT}{decision.tool_call.tool_name}{Style.RESET_ALL}")
-        print(f"Args: {tool_args}")
+        content = (
+            f"[bold magenta]Running Tool:[/bold magenta]\n"
+            f"Tool: [bold]{decision.tool_call.tool_name}[/bold]\n"
+            f"Args: {tool_args}"
+        )
+        console.print(Panel(content, style="magenta", expand=False))
 
     elif decision.action == Action.MOVE:
-        print(
-            f"{Style.BRIGHT}{Fore.CYAN}Moving to Next Step:{Style.RESET_ALL}",
-            decision.step_id,
-        )
+        content = f"[bold cyan]Moving to Next Step:[/bold cyan] {decision.step_id}"
+        console.print(Panel(content, style="cyan", expand=False))
 
     elif decision.action == Action.END:
-        print(f"{Style.BRIGHT}{Fore.RED}Ending Session:{Style.RESET_ALL}")
+        content = "[bold red]Ending Session:[/bold red]\n"
         if decision.response:
-            print(f"Final Response: {decision.response}")
+            content += f"Final Response: {decision.response}"
         else:
-            print("Session completed successfully")
+            content += "Session completed successfully"
+        console.print(Panel(content, style="red", expand=False))
 
-    # Show tool output if available
+    # Tool output panel
     if tool_output is not None:
-        print(f"{Style.BRIGHT}{Fore.GREEN}Tool Output:{Style.RESET_ALL}")
         tool_output_str = str(tool_output)
-        # Trim tool output if too long
         if len(tool_output_str) > 300:
             tool_output_str = tool_output_str[:297] + "..."
-        print(tool_output_str)
-
-    print()
+        console.print(Panel(tool_output_str, title="Tool Output", style="green", expand=False))
