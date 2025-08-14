@@ -14,6 +14,31 @@ steps:
     routes:
       - target: collect_requirements
         condition: Agent provides initial requirements
+      - target: gather_comparable_data
+        condition: If the user wants to create a Comparative Market Analysis (CMA) report
+
+  
+  - step_id: gather_comparable_data
+    description: |
+      Gather data on comparable properties in the area to help the agent understand the market.
+      Ask the agent for the MLS Number / Property ID of the subject property to gather comparables if not provided.
+      Use the `get_listing_comparables` tool to find similar properties for the given subject property.
+      This data will be used later to create a Comparative Market Analysis (CMA) report.
+    tools:
+      - get_listing_details
+      - get_listing_comparables
+    routes:
+      - target: create_cma_report
+        condition: Comparable data gathered
+
+  - step_id: create_cma_report
+    description: |
+      Create a Comparative Market Analysis (CMA) report for the agent to help them understand the market value of the property using the gathered data.
+      This report should contain the side by side comparsion of similar properties.
+    routes:
+      - target: gather_comparable_data
+        condition: User wants to refine or create a new CMA report
+
 
   - step_id: collect_requirements
     description: |
@@ -26,7 +51,7 @@ steps:
   - step_id: search_properties
     description: |
       Use the collected requirements to search for matching properties using the `get_listings` tool.
-      Iteratively go through the listings and get additional details using the `get_listing_details` tool.
+      MUST Iteratively go through all the listings and get additional details using the `get_listing_details` tool.
     tools:
       - get_listings
       - get_listing_details
@@ -53,11 +78,13 @@ steps:
     routes:
       - target: refine_search
         condition: Agent wants to refine criteria or see more options
-
-tools:
-  tool_files:
-    - repliers.py
+      - target: gather_comparable_data
+        condition: If the user wants to create a Comparative Market Analysis (CMA) report
 
 llm:
   provider: openai
   model: gpt-4o-mini
+  
+tools:
+  tool_files:
+    - repliers.py
